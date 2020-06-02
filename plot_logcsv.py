@@ -170,9 +170,6 @@ if ( altitudePlotUnits == "ft" ):
 
 # look at flightPhase data if provided
 
-startRecordIndex = -1
-endRecordIndex = -1
-
 if bUseFlightPhase:
     for fpk,fpv in flightPhase.items() :
         print("Analyzing flightPhase '{:s}'...".format(fpk))
@@ -196,7 +193,8 @@ if bUseFlightPhase:
                     bFoundEnd = True
                     break
 
-        #print("  index range = [{:d},{:d}]".format(startRecordIndex,endRecordIndex))
+        if not bFoundStart or not bFoundEnd:
+            raise ValueError("start and/or end times not found in data record")
 
         # compute average pressure and altitude
         # weighted by time between samples 
