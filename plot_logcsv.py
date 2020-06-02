@@ -3,12 +3,12 @@
 # note some early logs (e.g. LOG12.CSV, LOG13.CSV) have timestamp rollovers
 
 # want to add some analysis features:
-#   timestamp analysis (average diff, worst diff, std. dev. diffs)
 #   annotate flight segments, mark with truth data, get average sensor readings
 #   re-estimate altitude with "cal" offsets/new estimatation technique
 
 ### imports
 import csv
+import numpy as np
 import matplotlib.pyplot as plt
 
 ### parameters
@@ -18,134 +18,248 @@ DEBUG = True
 #filename = "arduino/feather-express/fe_test3/LOG12.CSV"
 filename = "arduino/feather-express/fe_test3/LOG13.CSV"
 
+# log annotations/"flight phase" metadata
+
+bUseFlightPhase = True
+
+####flightPhase = { # LOG12.CSV
+##    "groundBeforeTakeoff" : { "startSec": 0.0, "endSec": .0, "trueAGLft":   0.0 },
+##    "flightLevel1"        : { "startSec":0.0, "endSec":0.0, "trueAGLft": 100.0 },
+##    "flightLevel2"        : { "startSec":0.0, "endSec":0.0, "trueAGLft": 200.0 },
+##    "flightLevel3"        : { "startSec":0.0, "endSec":0.0, "trueAGLft": 300.0 },
+##    "flightLevel4"        : { "startSec":0.0, "endSec":0.0, "trueAGLft": 393.0 },
+##    "groundAfterLanding"  : { "startSec":0.0, "endSec":0.0, "trueAGLft":   0.0 },
+####} # end flightPhase LOG12.CSV
+flightPhase = { # LOG13.CSV
+    "groundBeforeTakeoff" : { "startSec": 50.0, "endSec": 80.0, "trueAGLft":   0.0 },
+    "flightLevel1"        : { "startSec":110.0, "endSec":130.0, "trueAGLft": 100.0 },
+    "flightLevel2"        : { "startSec":155.0, "endSec":180.0, "trueAGLft": 200.0 },
+    "flightLevel3"        : { "startSec":210.0, "endSec":250.0, "trueAGLft": 300.0 },
+    "flightLevel4"        : { "startSec":290.0, "endSec":305.0, "trueAGLft": 500.0 },
+    "groundAfterLanding"  : { "startSec":415.0, "endSec":440.0, "trueAGLft":   0.0 },
+} # end flightPhase LOG13.CSV
+# assign null if no flightPhase data available
+
 altitudePlotUnits = "ft" # either "m" or "ft"
 
 bUnrollTimestampSupport = True
 
 ### init
 
-timeMs = []
-timeSec = []
-pressurePa = []
-altitudeM = []
-altitudeFt = []
-
-altitudeStartM = 0.0
-altitudeEndM = 0.0
-altitudeMaxM = 0.0
-
 convertMtoFt = 3.28084
 
 timestampUnrolls = 0
 
+### helper functions
+
+# count lines in log file.  ignore lines that start with "#" or that are empty.
+# returns -1 if the file cannot be opened
+def logFileCountDataRecords(fn):
+
+    count = 0
+
+    try: 
+        with open(fn,"rt") as f:
+            for line in f:
+                if (len(line) == 0 or line[0] == "#"):
+                    pass
+                else:
+                    count += 1
+    except IOError as e:
+        print("ERROR: I/O error({0}): {1}".format(e.errno, e.strerror))
+        return -1
+        
+    return count
+
 ### read data
 print("opening {:s} ... \n".format(filename))
 
-with open(filename, "rt", newline='') as csvfile:
-    # use csv library to read
-    logcsv = csv.reader(csvfile)
-    #logcsv = csv.reader(csvfile, delimiter=',', quoting=csv.QUOTE_NONNUMERIC) # broken
-    #note: QUOTE_NONNUMERIC doesn't work unless strings are ALWAYS quoted
+nRecord = logFileCountDataRecords(filename)
+if nRecord < 0:
+    raise Exception("Could not determine log file data record count.")
 
-    nRows = 0
-    timemsRaw = 0
-    prevTimemsRaw = 0
-    
-    for row in logcsv:
+timeMs = np.zeros(nRecord)
+timeSec = np.zeros(nRecord)
+pressurePa = np.zeros(nRecord)
+altitudeM = np.zeros(nRecord)
+altitudeFt = np.zeros(nRecord)
 
-        # skip line if the first value starts with "#"
-        if row[0].startswith('#'):
-            continue
+try:
+    with open(filename, "rt", newline='') as csvfile:
+        # use csv library to read
+        logcsv = csv.reader(csvfile)
+        #logcsv = csv.reader(csvfile, delimiter=',', quoting=csv.QUOTE_NONNUMERIC) # broken
+        #note: QUOTE_NONNUMERIC doesn't work unless strings are ALWAYS quoted
 
-        #print(row) # debug
+        nRows = 0
+        timemsRaw = 0
+        prevTimemsRaw = 0
 
-        # read data into data structures
-        # TODO: preallocate data structures to speed this code up
-        prevTimemsRaw = timemsRaw;
-        timemsRaw = int(row[0]);
-        timeMs.append(timemsRaw)
-        pressurePa.append(float(row[1]))
-        altitudeM.append(float(row[2]))
+        iRecord = 0
+        
+        for row in logcsv:
 
-        if ( altitudePlotUnits == "ft" ):
-            altitudeFt.append( altitudeM[-1] * convertMtoFt )
+            # skip line if the first value starts with "#"
+            if row[0].startswith('#'):
+                continue
 
-        # fix timestamp rollovers
-        if ( bUnrollTimestampSupport ):
-            if ( timemsRaw - prevTimemsRaw < 0 ):
-                timestampUnrolls += 1
+            #print(row) # debug
 
-            timeMs[-1] = timeMs[-1] + (2**16)*timestampUnrolls
+            # read data into data structures
+            # TODO: preallocate data structures to speed this code up
+            prevTimemsRaw = timemsRaw;
+            timemsRaw = int(row[0]);
+            
+            timeMs[iRecord] = timemsRaw
+            pressurePa[iRecord] = float(row[1])
+            altitudeM[iRecord] = float(row[2])
 
+            # fix timestamp rollovers
+            if ( bUnrollTimestampSupport ):
+                if ( timemsRaw - prevTimemsRaw < 0 ):
+                    timestampUnrolls += 1
+
+                timeMs[iRecord] = timeMs[iRecord] + (2**16)*timestampUnrolls
+
+            iRecord += 1
+
+        
         # calculate timestamp in seconds for convenience later
-        timeSec.append(float(timeMs[-1])*1e-3) 
+        timeSec = timeMs * 1e-3 
 
-        # gather altitude stats
-        if float(row[2]) > altitudeMaxM :
-            altitudeMaxM = float(row[2])
+        # calculate altitude in ft
+        if ( altitudePlotUnits == "ft" ):
+            altitudeFt = altitudeM * convertMtoFt
 
-        nRows += 1
-
-    csvfile.close()
-
-print("read in {:d} rows\n".format(nRows))
-
-# DEBUG
+            
+except IOError as e:
+    print("ERROR: I/O error({0}): {1}".format(e.errno, e.strerror))
+        
 if (DEBUG):
     print("Some time values (ms): ")
-    print(timeMs[0:2])
+    print(timeMs[0:3])
     print("...")
-    print(timeMs[-3:-1])
+    print(timeMs[-4:-1])
     print("Some time values (sec): ")
-    print(timeSec[0:2])
+    print(timeSec[0:3])
     print("...")
-    print(timeSec[-3:-1])
+    print(timeSec[-4:-1])
     print()
+
+### analysis
+
+# timestamp analysis
+timeDiffSec = timeSec[1:] - timeSec[0:-1]
+print("timestamp analysis:")
+print("       average diff between timestamps = {:0.6f} s".format(timeDiffSec.mean()))
+print("    worst case diff between timestamps = {:0.6f} s".format(timeDiffSec.max()))
+print("  std. dev. of diff between timestamps = {:0.6f} s".format(timeDiffSec.std()))
+print()
+print("  timestamps rolled over {:d} times".format(timestampUnrolls))
+print()
 
 # report altitude stats
 print("altitude (m) start: {:7.1f}".format(altitudeM[0]))
 print("altitude (m) end  : {:7.1f}".format(altitudeM[-1]))
-print("altitude (m) max  : {:7.1f}\n".format(altitudeMaxM))
+print("altitude (m) max  : {:7.1f}\n".format(altitudeM.max()))
 
 if ( altitudePlotUnits == "ft" ):
     print("altitude (ft) start: {:7.1f}".format(altitudeM[0]*convertMtoFt))
     print("altitude (ft) end  : {:7.1f}".format(altitudeM[-1]*convertMtoFt))
-    print("altitude (ft) max  : {:7.1f}\n".format(altitudeMaxM*convertMtoFt))
+    print("altitude (ft) max  : {:7.1f}\n".format(altitudeM.max()*convertMtoFt))
+
+# look at flightPhase data if provided
+
+startRecordIndex = -1
+endRecordIndex = -1
+
+if bUseFlightPhase:
+    for fpk,fpv in flightPhase.items() :
+        print("Analyzing flightPhase '{:s}'...".format(fpk))
+
+        print("  phase starts at {:.1f} s and ends at {:.1f} s".\
+              format(fpv['startSec'],fpv['endSec']))
+
+        # loop over data, find relevant indices
+        bFoundStart = False
+        bFoundEnd = False
+        for i in range(len(timeSec)):
+            # look for start
+            if not bFoundStart:
+                if (timeSec[i] >= fpv['startSec']):
+                    fpv['startIndex'] = i
+                    bFoundStart = True
+            # look for end
+            if bFoundStart and not bFoundEnd:
+                if (timeSec[i] >= fpv['endSec']):
+                    fpv['endIndex'] = max(0,i-1)
+                    bFoundEnd = True
+                    break
+
+        #print("  index range = [{:d},{:d}]".format(startRecordIndex,endRecordIndex))
+
+        # compute average pressure and altitude
+        # weighted by time between samples 
+        fpv['avgPressurePa'] = (   pressurePa[fpv['startIndex']:fpv['endIndex']+1] \
+                                 * timeDiffSec[fpv['startIndex']+1:fpv['endIndex']+2] ).sum() \
+                               / timeDiffSec[fpv['startIndex']+1:fpv['endIndex']+2].sum()
+        
+        fpv['avgAltitudeM'] = ( altitudeM[fpv['startIndex']:fpv['endIndex']+1] \
+                                * timeDiffSec[fpv['startIndex']+1:fpv['endIndex']+2] ).sum() \
+                              / timeDiffSec[fpv['startIndex']+1:fpv['endIndex']+2].sum()
+
+        print("  average pressure = {:.1f} Pa".format(fpv['avgPressurePa']))
+        print("  average altitude = {:.1f} m".format(fpv['avgAltitudeM']))
+        if ( altitudePlotUnits == "ft" ):
+            print("  average altitude = {:.1f} ft".format(fpv['avgAltitudeM']*convertMtoFt))
+        print()
+
 
 ### do plots
+        
+if ( altitudePlotUnits == "m" ):
+    altitudePlot = altitudeM
+elif ( altitudePlotUnits == "ft" ):
+    altitudePlot = altitudeFt
+else:
+    raise ValueError("Invalid altitudePlotUnits")
 
 # altitude and pressure vs. time
 # altutide vs. time
-plt.figure(1)
-plt.subplot(211)
+hFig1 = plt.figure(1)
+hFig1s1 = plt.subplot(211)
+plt.plot(timeSec,altitudePlot)
 if ( altitudePlotUnits == "m" ):
-    plt.plot(timeSec,altitudeM)
     plt.ylabel('altitude (m)')
 elif ( altitudePlotUnits == "ft" ):
-    plt.plot(timeSec,altitudeFt)
     plt.ylabel('altitude (ft)')
-else:
-    raise ValueError("Invalid altitudePlotUnits")
 plt.grid(True)
 plt.title("data vs. time")
 # pressure vs. time
-plt.subplot(212)
+hFig1s2 = plt.subplot(212)
 plt.plot(timeSec,pressurePa)
 plt.ylabel("pressure (Pa)")
 plt.xlabel("time (s)")
 plt.grid(True)
 
+# add annotations
+if bUseFlightPhase:
+    # add annotations to altitude plot
+    plt.subplot(hFig1s1)
+    for fpk,fpv in flightPhase.items() :
+        # add start annotation
+        plt.scatter(fpv["startSec"],altitudePlot[fpv['startIndex']],c="g",marker="x")
+        # add end annotation
+        plt.scatter(fpv["endSec"],altitudePlot[fpv['endIndex']],c="r",marker="x")
+    
 
 # altitude vs. pressure
 plt.figure(2)
+plt.scatter(pressurePa,altitudePlot)
 if ( altitudePlotUnits == "m" ):
-    plt.scatter(pressurePa,altitudeM)
     plt.ylabel("altitude (m)")
 elif ( altitudePlotUnits == "ft" ):
-    plt.scatter(pressurePa,altitudeFt)
     plt.ylabel("altitude (ft)")
-else:
-    raise ValueError("Invalid altitudePlotUnits")
 plt.xlabel("pressure (Pa)")
 plt.title("altitude vs. pressure")
 plt.grid(True)
