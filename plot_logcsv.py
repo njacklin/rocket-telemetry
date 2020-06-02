@@ -250,6 +250,14 @@ if bUseFlightPhase:
         # add end annotation
         plt.scatter(fpv["endSec"],altitudePlot[fpv['endIndex']],c="r",marker="x")
     
+    # add annotations to pressure plot
+    plt.subplot(hFig1s2)
+    for fpk,fpv in flightPhase.items() :
+        # add start annotation
+        plt.scatter(fpv["startSec"],pressurePa[fpv['startIndex']],c="g",marker="x")
+        # add end annotation
+        plt.scatter(fpv["endSec"],pressurePa[fpv['endIndex']],c="r",marker="x")
+    
 
 # altitude vs. pressure
 plt.figure(2)
