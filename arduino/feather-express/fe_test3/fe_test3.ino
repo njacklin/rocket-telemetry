@@ -233,7 +233,7 @@ void loop() {
       digitalWrite(LED_BUILTIN,HIGH);
 
       // if a "long press" has happened, then go to WRITE MODE
-      if (millis() - buttonPressStartedms > LONGPRESSMS) {
+      if (millis() - buttonPressStartedms >= LONGPRESSMS) {
         // update mode
         MODE = MODE_WRITE;
 
@@ -317,8 +317,8 @@ void loop() {
         }
 
         // if it has been too long, let's declare failure and redraw
-        if ( millis() - startedWaitingUserInputms > 20000L ) {
-          while (Serial.read() < 0); // consume serial buffer gunk
+        if ( millis() - startedWaitingUserInputms >= 20000L ) {
+          while (Serial.read() > 0); // consume serial buffer gunk
           printedReadIntro = false;
         }
 
@@ -449,9 +449,7 @@ void loop() {
               } else if ( cmd == 'C' || cmd == 'c' ) { // end if Read else Playback else CSV
                 
                 Serial.print(timestampmsData); Serial.print(",");
-
                 Serial.print(pressurePa); Serial.print(",");
-
                 Serial.print(altitudeM); 
                 
                 Serial.println();
@@ -470,6 +468,8 @@ void loop() {
             if ( cmd == 'R' || cmd == 'r' || cmd == 'C' || cmd == 'c'  ) { // Read or CSV
               Serial.println();
               Serial.println(F("File read complete."));
+
+              printedReadIntro = false; // print out file list again on next loop
               
             } else if  ( cmd == 'P' || cmd == 'p' ) { // Playback
               
@@ -545,20 +545,24 @@ void loop() {
      }
 
      // read and write data if the time is right
-     if ( millis() - lastWritems > LOGRATEMS ) {
+     if ( millis() - lastWritems >= LOGRATEMS ) {
        lastWritems = millis();
 
-       // turn on LED
-       digitalWrite(LED_BUILTIN,HIGH);
 
        // read sensor (or fail trying)
-       if ( !bmp.performReading() ) { 
+       if ( bmp.performReading() ) { 
+         // turn on LED
+         digitalWrite(LED_BUILTIN,HIGH);
+       } else { // sensor reading went badly
          Serial.println("ERROR: Failed to perform reading :(");
          Serial.flush();
-         return; // no blink
+         return; 
         }
 
        // do write stuff
+       
+       altitudeBuffer = convertAltitude(SEALEVELPRESSURE_HPA, bmp.pressure / 100.0);
+       
        #ifdef DEBUG
 //       Serial.print("Temperature (*C) = ");
 //       Serial.print(bmp.temperature);
@@ -572,7 +576,6 @@ void loop() {
        Serial.print(bmp.pressure);
        Serial.print(", ");
 
-       altitudeBuffer = convertAltitude(SEALEVELPRESSURE_HPA, bmp.pressure / 100.0);
        Serial.print("Altitude (m) = ");
        Serial.print(altitudeBuffer);  
        Serial.println();
@@ -630,7 +633,7 @@ void loop() {
      }
 
      // flush data if appropriate (partial writes don't seem to be saved)
-     if ( millis() - lastWriteFlushms > LOGFILEWRITERATEMS ) {
+     if ( millis() - lastWriteFlushms >= LOGFILEWRITERATEMS ) {
        lastWriteFlushms = millis();
 
        // close
