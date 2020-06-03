@@ -6,7 +6,7 @@
 #
 # pressure depends on sea level pressure, using 101325 pascals in formula.
 #   formula is pressurePa = 101325 * (1 - 0.0000225577 * altitudeM) ** 5.25588,
-#   from https://www.engineeringtoolbox.com/air-altitude-pressure-d_462.html.
+#   from https://www.engineeringtoolbox.com/air-altitude-pressure-d_462.html
 
 ### parameters
 
