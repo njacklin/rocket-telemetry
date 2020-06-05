@@ -15,29 +15,31 @@ import matplotlib.pyplot as plt
 
 DEBUG = True
 
-filename = "arduino/feather-express/fe_test3/LOG12.CSV"
-#filename = "arduino/feather-express/fe_test3/LOG13.CSV"
+#filename = "arduino/feather-express/fe_test3/LOG12.CSV"
+filename = "arduino/feather-express/fe_test3/LOG13.CSV"
 
 # log annotations/"flight phase" metadata
 
 bUseFlightPhaseTruth = True
 
-flightPhaseTruth = { # LOG12.CSV
-    "groundBeforeTakeoff" : { "startSec": 40.0, "endSec": 80.0, "trueAGLft":   0.0 },
-    "flightLevel1"        : { "startSec":132.5, "endSec":155.0, "trueAGLft": 100.0 },
-    "flightLevel2"        : { "startSec":180.0, "endSec":200.0, "trueAGLft": 200.0 },
-    "flightLevel3"        : { "startSec":225.0, "endSec":255.0, "trueAGLft": 300.0 },
-    "flightLevel4"        : { "startSec":296.0, "endSec":306.0, "trueAGLft": 393.0 },
-    "groundAfterLanding"  : { "startSec":380.0, "endSec":425.0, "trueAGLft":   0.0 },
-} # end flightPhase LOG12.CSV
-##flightPhaseTruth = { # LOG13.CSV
-##    "groundBeforeTakeoff" : { "startSec": 50.0, "endSec": 80.0, "trueAGLft":   0.0 },
-##    "flightLevel1"        : { "startSec":110.0, "endSec":130.0, "trueAGLft": 100.0 },
-##    "flightLevel2"        : { "startSec":155.0, "endSec":180.0, "trueAGLft": 200.0 },
-##    "flightLevel3"        : { "startSec":210.0, "endSec":250.0, "trueAGLft": 300.0 },
-##    "flightLevel4"        : { "startSec":290.0, "endSec":305.0, "trueAGLft": 500.0 },
-##    "groundAfterLanding"  : { "startSec":415.0, "endSec":440.0, "trueAGLft":   0.0 },
-##} # end flightPhase LOG13.CSV
+##flightPhaseTruth = { # LOG12.CSV
+##    "groundBeforeTakeoff" : { "startSec": 40.0, "endSec": 80.0, "trueAGLft":   0.0 },
+##    "flightLevel1"        : { "startSec":132.5, "endSec":155.0, "trueAGLft": 100.0 },
+##    "flightLevel2"        : { "startSec":180.0, "endSec":200.0, "trueAGLft": 200.0 },
+##    "flightLevel3"        : { "startSec":225.0, "endSec":255.0, "trueAGLft": 300.0 },
+##    "flightLevel4"        : { "startSec":296.0, "endSec":306.0, "trueAGLft": 393.0 },
+##    "groundAfterLanding"  : { "startSec":380.0, "endSec":425.0, "trueAGLft":   0.0 },
+##} # end flightPhase LOG12.CSV
+##trueGroundAltitudeM = 52.0
+flightPhaseTruth = { # LOG13.CSV
+    "groundBeforeTakeoff" : { "startSec": 50.0, "endSec": 80.0, "trueAGLft":   0.0 },
+    "flightLevel1"        : { "startSec":110.0, "endSec":130.0, "trueAGLft": 100.0 },
+    "flightLevel2"        : { "startSec":155.0, "endSec":180.0, "trueAGLft": 200.0 },
+    "flightLevel3"        : { "startSec":210.0, "endSec":250.0, "trueAGLft": 300.0 },
+    "flightLevel4"        : { "startSec":290.0, "endSec":305.0, "trueAGLft": 500.0 },
+    "groundAfterLanding"  : { "startSec":415.0, "endSec":440.0, "trueAGLft":   0.0 },
+} # end flightPhase LOG13.CSV
+trueGroundAltitudeM = 52.0
 
 altitudePlotUnits = "ft" # either "m" or "ft"
 
@@ -236,14 +238,14 @@ if bUseFlightPhaseTruth:
     if ( altitudePlotUnits == "ft" ):
         print("Average 'ground' altitude = {:.1f} ft".format(avgGroundAltitudeM*convertMtoFt))
     print()
-    
+
+    # compute altitude using subtraction of ground altitude reading
     print("Altitude Above Ground Level (AGL) using straight subtraction:")
     # compute AGL
     for fpk,fpv in flightPhaseTruth.items():
-        fpv['altitudeAGLM'] = fpv['avgAltitudeM'] - avgGroundAltitudeM
-        if not fpk.startswith("ground"):
-            print("  {:s} average AGL = {:.1f} ft, true AGL = {:.1f} ft"\
-                  .format(fpk,fpv['altitudeAGLM']*convertMtoFt,fpv['trueAGLft']))
+        fpv['altitudeAGLM'] = fpv['avgAltitudeM'] - flightPhaseTruth['groundBeforeTakeoff']['avgAltitudeM']
+        print("  {:s} average AGL = {:.1f} ft, true AGL = {:.1f} ft"\
+              .format(fpk,fpv['altitudeAGLM']*convertMtoFt,fpv['trueAGLft']))
     print()
 
     # lets try to get better AGL values
@@ -252,9 +254,28 @@ if bUseFlightPhaseTruth:
           .format(avgGroundPressurePa))
     
     for fpk,fpv in flightPhaseTruth.items():
+        fpv['estimatedAGL1M'] = convertAltitudeM(fpv['avgPressurePa'],avgGroundPressurePa)
         print("  {:s} esimated AGL = {:.1f} ft".\
-              format(fpk,convertAltitudeM(fpv['avgPressurePa'],avgGroundPressurePa)*convertMtoFt),end="")
+              format(fpk,fpv['estimatedAGL1M']*convertMtoFt),end="")
         print(", true AGL = {:.1f} ft".format(fpv['trueAGLft']))
+    print()
+    
+    # try 2
+    # just use averages before takeoff, since that is all we will know in practice
+    # first, use ground pressure reading and true ground altitude to find altimeter setting
+    # then use true ground altitude to subtract off to get AGL
+    # use https://www.engineeringtoolbox.com/air-altitude-pressure-d_462.html
+    # and solve for pressure at sea level
+    print("Better AGL estimate try 2: use sensor data to set sea level pressure offset")
+    pressureSeaLevelCalcPa = flightPhaseTruth['groundBeforeTakeoff']['avgPressurePa'] \
+                             / ( 1 - 2.25577e-5 * trueGroundAltitudeM ) ** 5.25588
+    print("  sea level pressure offset calculated = {:.1f} Pa".format(pressureSeaLevelCalcPa))
+    for fpk,fpv in flightPhaseTruth.items():
+        fpv['estimatedAGL2M'] = convertAltitudeM(fpv['avgPressurePa'],pressureSeaLevelCalcPa) \
+                                - trueGroundAltitudeM
+        print("  estimated AGL for '{:s}': {:.1f} ft".format(fpk,fpv['estimatedAGL2M']*convertMtoFt),end="")
+        print(", true AGL = {:.1f} ft".format(fpv['trueAGLft']))
+    print()
               
 ### do plots
         
