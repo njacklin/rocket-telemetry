@@ -23,6 +23,7 @@
 
 // pin for user switch
 #define PIN_USERSW PIN_BUTTON1
+#define RFE_BUTTON_PRESSED_VALUE (0)
 
 // modes
 #define RFE_MODE_READ (1)
@@ -30,6 +31,10 @@
 
 // data record length bytes
 #define RFE_DATA_RECORD_LEN (6)
+
+// BLE params
+#define RFE_BLE_TXPOWER_READ (2)
+#define RFE_BLE_TXPOWER_WRITE (8)
 
 // conversion factors
 #define RFE_CONVERT_M_TO_FT (3.28084f)
@@ -42,23 +47,28 @@ class RocketelFE
     RocketelFE();
 
     // public methods
-    void begin();
-    bool initialized();
+    bool begin();
+    bool initialized() {return _bInit;}
+
+    uint32_t getFlashJEDECID();
 
   private:
     // flash related objects
-    Adafruit_FlashTransport_QSPI _flashTransport;
-    Adafruit_SPIFlash _flash;
-    FatFileSystem _fatfs;
+    // Adafruit_FlashTransport_QSPI _flashTransport;
+    // Adafruit_SPIFlash _flash;
+    // FatFileSystem _fatfs;
 
     // BMP388 sensor object
     Adafruit_BMP3XX _bmp;
 
-    // initialized
+    // initialized flag
     bool _bInit = false;
 
     // Mode
     int _mode = 0;
+
+    // BLE name
+    char _bleName[32];
 
     // buffers
     byte _rwBuffer[RFE_DATA_RECORD_LEN];
