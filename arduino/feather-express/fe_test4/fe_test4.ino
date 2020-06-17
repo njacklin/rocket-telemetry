@@ -160,7 +160,7 @@ void setup() {
     delay(500);
   }
   
-  Serial.println(F("\n\nFeather express test 3 -------------------------------"));
+  Serial.println(F("\n\nFeather express test 4 -------------------------------"));
   Serial.println();
 
   // initialize flash library and check its chip ID.
@@ -243,7 +243,7 @@ void setup() {
 void loop() {
   // handle button input BUTTON BUTTON BUTTON BUTTON BUTTON BUTTON BUTTON BUTTON
   // long press is a one-way ticket to WRITE mode
-  // and skip this check if we are in WRITE mode--focus on writing! 
+  // anbd skip this check if we are in WRITE mode--focus on writing! 
   // (reset will get us back to READ)
   if ( MODE != MODE_WRITE ) { 
     
