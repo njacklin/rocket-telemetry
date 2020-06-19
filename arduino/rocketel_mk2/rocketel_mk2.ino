@@ -36,6 +36,15 @@ void loop() {
   Serial.print(R.readPressurePa());
   Serial.println(" Pa");
 
+  R.readBatteryLevel();
+  Serial.print("Battery reading: ");
+  Serial.print(R.getBatteryVoltage());
+  Serial.print(" V, Level (0-100): ");
+  Serial.print(R.getBatteryLevel());
+  Serial.println();
+
+  R.updateBLEBatteryLevel(false);
+
   Serial.println();
   delay(2000);
 }
