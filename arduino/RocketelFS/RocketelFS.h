@@ -52,6 +52,14 @@ const uint8_t UUID128_CHR_TDS_TIMESTAMP_MS[16] = {
 const uint8_t UUID128_CHR_TDS_PRESSURE_PA[16] = {
     0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
     0x74, 0x41, 0xf1, 0x5d, 0x03, 0x00, 0x69, 0x01  };
+// BLE UUID for TDS:altitude_m                : 01690004-5df1-4174-a537-33891e600690
+const uint8_t UUID128_CHR_TDS_ALTITUDE_M[16] = {
+    0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
+    0x74, 0x41, 0xf1, 0x5d, 0x04, 0x00, 0x69, 0x01  };
+// BLE UUID for TDS:max_altitude_m            : 01690F04-5df1-4174-a537-33891e600690
+const uint8_t UUID128_CHR_TDS_MAX_ALTITUDE_M[16] = {
+    0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
+    0x74, 0x41, 0xf1, 0x5d, 0x04, 0x0F, 0x69, 0x01  };
 // BLE UUID for TDS:timestamp_ms_str          : 01691002-5df1-4174-a537-33891e600690
 const uint8_t UUID128_CHR_TDS_TIMESTAMP_MS_STR[16] = {
     0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
@@ -60,6 +68,14 @@ const uint8_t UUID128_CHR_TDS_TIMESTAMP_MS_STR[16] = {
 const uint8_t UUID128_CHR_TDS_PRESSURE_PA_STR[16] = {
     0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
     0x74, 0x41, 0xf1, 0x5d, 0x03, 0x10, 0x69, 0x01  };
+// BLE UUID for TDS:altitude_str              : 01691004-5df1-4174-a537-33891e600690
+const uint8_t UUID128_CHR_TDS_ALTITUDE_STR[16] = {
+    0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
+    0x74, 0x41, 0xf1, 0x5d, 0x04, 0x10, 0x69, 0x01  };
+// BLE UUID for TDS:max_altitude_str          : 01691F04-5df1-4174-a537-33891e600690
+const uint8_t UUID128_CHR_TDS_MAX_ALTITUDE_STR[16] = {
+    0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
+    0x74, 0x41, 0xf1, 0x5d, 0x04, 0x1F, 0x69, 0x01  };
 // BLE UUID for TDS:mode_str                  : 01690031-5df1-4174-a537-33891e600690
 const uint8_t UUID128_CHR_TDS_MODE_STR[16] = {
     0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
@@ -89,10 +105,12 @@ class RocketelFS
     float getLastBatteryVoltage() {return _batteryVoltage;}
     int getLastBatteryLevel() {return _batteryLevel;}
     
-    void readPressureSensor();
+    float readPressureSensor();
     float getLastPresurePa() {return _pressurePa;}
     float getLastAltitudeM() {return _altitudeM;}
     float getMaxAltitudeM() {return _maxAltitudeM;}
+
+    bool changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt = true);
 
     int getMode() {return _mode;}
 
@@ -114,8 +132,8 @@ class RocketelFS
     BLECharacteristic bletds_max_altitude_m;
     BLECharacteristic bletds_timestamp_ms_str;
     BLECharacteristic bletds_pressure_pa_str;
-    BLECharacteristic bletds_altitude_m_str;
-    BLECharacteristic bletds_max_altitude_m_str;
+    BLECharacteristic bletds_altitude_str;
+    BLECharacteristic bletds_max_altitude_str;
     BLECharacteristic bletds_altitude_algorithm;
     BLECharacteristic bletds_altitude_ref;
     BLECharacteristic bletds_pressure_offset_pa;
@@ -146,8 +164,8 @@ class RocketelFS
     char _bleLogIndexStr[20] = "";
     char _bleTimestampMsStr[20] = "";
     char _blePressurePaStr[20] = "";
-    char _bleAltitudeMStr[20] = "";
-    char _bleMaxAltitudeMStr[20] = "";
+    char _bleAltitudeStr[20] = "";
+    char _bleMaxAltitudeStr[20] = "";
 
     // battery voltage and level
     float _batteryVoltage = 0.0f;
@@ -162,6 +180,7 @@ class RocketelFS
     float _altitudeOffsetM = 0.0f;
     char _altitudeRef[4] = "AGL";
     char _altitudeAlgorithm[3] = "1A";
+    char _altitudeStrUnits[3] = "ft";
 
     unsigned long _lastPressureSensorReadingTimeMs = 0L; 
 

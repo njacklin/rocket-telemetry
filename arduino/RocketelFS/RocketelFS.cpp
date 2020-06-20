@@ -61,6 +61,9 @@ bool RocketelFS::begin()
   // first readings are no good, so burn off a few
   bmp.readPressure(); delay(100); bmp.readPressure();
 
+  // set altitude settings for initial altitude algorithm
+  changeAltitudeAlgorithm(_altitudeAlgorithm);
+
   // BLE init
 
   // init Bluefruit
@@ -123,6 +126,34 @@ bool RocketelFS::begin()
   bletds_pressure_pa_str.setMaxLen(20); // "P(Pa):######"
   bletds_pressure_pa_str.begin();
 
+  // TDS:altitude_m (float) characteristic
+  bletds_altitude_m  = BLECharacteristic(UUID128_CHR_TDS_ALTITUDE_M);
+  bletds_altitude_m.setProperties(CHR_PROPS_NOTIFY);
+  bletds_altitude_m.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_altitude_m.setFixedLen(4);
+  bletds_altitude_m.begin();
+
+  // TDS:altitude_str (utf8s) characteristic
+  bletds_altitude_str  = BLECharacteristic(UUID128_CHR_TDS_ALTITUDE_STR);
+  bletds_altitude_str.setProperties(CHR_PROPS_NOTIFY);
+  bletds_altitude_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_altitude_str.setMaxLen(20); // "Alt(units)):######"
+  bletds_altitude_str.begin();
+
+  // TDS:max_altitude_m (float) characteristic
+  bletds_max_altitude_m  = BLECharacteristic(UUID128_CHR_TDS_MAX_ALTITUDE_M);
+  bletds_max_altitude_m.setProperties(CHR_PROPS_NOTIFY);
+  bletds_max_altitude_m.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_max_altitude_m.setFixedLen(4);
+  bletds_max_altitude_m.begin();
+
+  // TDS:max_altitude_str (utf8s) characteristic
+  bletds_max_altitude_str  = BLECharacteristic(UUID128_CHR_TDS_MAX_ALTITUDE_STR);
+  bletds_max_altitude_str.setProperties(CHR_PROPS_NOTIFY);
+  bletds_max_altitude_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_max_altitude_str.setMaxLen(20); // "MaxAlt(units)):######"
+  bletds_max_altitude_str.begin();
+
   // TDS:mode_str (string) characteristic
   bletds_mode_str  = BLECharacteristic(UUID128_CHR_TDS_MODE_STR);
   bletds_mode_str.setProperties(CHR_PROPS_READ);
@@ -162,7 +193,8 @@ uint32_t RocketelFS::getFlashJEDECID()
 
 // read pressure sensor, set relevant private variables
 // note this includes setting altitude derived measurement
-void RocketelFS::readPressureSensor() {
+// returns pressure in pa as float
+float RocketelFS::readPressureSensor() {
   // convention: set last sensor reading time immediately before read
   _lastSensorReadingTimeMs = _lastPressureSensorReadingTimeMs = millis();
   
@@ -172,6 +204,41 @@ void RocketelFS::readPressureSensor() {
 
   // compute altitude
   computeAltitude();
+
+  return _pressurePa;
+}
+
+// change altitude algorithm
+// this will include taking "initial"/ground measurements if needed
+// returns false if there is an error
+// TODO: extend signature to handle 2A/2B
+bool RocketelFS::changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt) {
+  // update offsets
+  if ( strcmp(algorithmStr,"1A") == 0 ) {
+    _altitudeOffsetM = 0.0f;
+    _pressureOffsetPa = readPressureSensor();
+  } else if  ( strcmp(algorithmStr,"1B") == 0 ) {
+    _pressureOffsetPa = 101325.0f;
+    _altitudeOffsetM = 
+      44330.0f * (1.0f - pow(readPressureSensor() / _pressureOffsetPa,0.1903));
+  // } else if  ( strcmp(algorithmStr,"2A") ) { // TODO
+  // } else if  ( strcmp(algorithmStr,"2B") ) { // TODO
+  } else {
+    return false;
+  }
+
+  // update algorithm string state variable
+  strcpy(_altitudeAlgorithm,algorithmStr);
+
+  // reset max altitude
+  if ( resetMaxAlt ) 
+    _maxAltitudeM  = 0.0f;
+  
+  // recompute altitude
+  computeAltitude();
+
+  Serial.println(F("DEBUG: exiting changeAltitudeAlgorithm() successfully."));
+  return true;
 }
 
 // read and return battery level
@@ -216,8 +283,24 @@ void RocketelFS::updateBLETDS() {
   sprintf(_blePressurePaStr,"P(Pa):%d",pressurePa_uint32);
   bletds_pressure_pa_str.notify(_blePressurePaStr);
 
-  // altitude characteristics
-  // TODO
+  // altitude and max altitude characteristics
+  bletds_altitude_m.notify(&_altitudeM,4);
+
+  if ( strcmp(_altitudeStrUnits,"m") == 0 )
+    sprintf(_bleAltitudeStr,"Alt(m):%.1f",_altitudeM);
+  else if ( strcmp(_altitudeStrUnits,"ft") == 0 )
+    sprintf(_bleAltitudeStr,"Alt(ft):%.1f",_altitudeM*RFS_CONVERT_M_TO_FT);
+                                
+  bletds_altitude_str.notify(_bleAltitudeStr);
+  
+  bletds_max_altitude_m.notify(&_maxAltitudeM,4);
+  
+  if ( strcmp(_altitudeStrUnits,"m") == 0 )
+    sprintf(_bleMaxAltitudeStr,"MaxAlt(m):%.1f",_maxAltitudeM);
+  else if ( strcmp(_altitudeStrUnits,"ft") == 0 )
+    sprintf(_bleMaxAltitudeStr,"MaxAlt(ft):%.1f",_maxAltitudeM*RFS_CONVERT_M_TO_FT);
+  
+  bletds_max_altitude_str.notify(_bleMaxAltitudeStr);
 
   // mode-specific updates
   switch (_mode) {
@@ -277,10 +360,15 @@ void RocketelFS::bleDisconnectCallback(uint16_t conn_handle, uint8_t reason)
 // returns the computed altitude in m
 float RocketelFS::computeAltitude() {
   // error checking
-  if ( strcmp(_altitudeAlgorithm,"1A") == 0 && _altitudeOffsetM != 0.0f ) 
+  if ( strcmp(_altitudeAlgorithm,"1A") == 0 && _altitudeOffsetM != 0.0f ) {
     Serial.println(F("WARNING: altitude offset not set right for algorithm 1A"));
-  if ( strcmp(_altitudeAlgorithm,"1B") == 0 && _pressureOffsetPa != 101325.0f ) 
+    Serial.print(F("DEBUG: _altitudeOffsetM = ")); 
+    Serial.println(_altitudeOffsetM);
+  }
+  
+  if ( strcmp(_altitudeAlgorithm,"1B") == 0 && _pressureOffsetPa != 101325.0f ) { 
     Serial.println(F("WARNING: pressure offset not set right for algorithm 1B"));
+  }
 
   // compute 
   // note: calculation is the same for all algorithms, just the offsets change
