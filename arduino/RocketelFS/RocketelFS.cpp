@@ -63,9 +63,6 @@ bool RocketelFS::begin()
 
   // BLE init
 
-  // set name
-  strcpy(_bleName,"RocketelFS-1");
-
   // init Bluefruit
   if (!Bluefruit.begin()) {
     Serial.println(F("ERROR: Could not begin() Bluefruit library."));
@@ -86,8 +83,8 @@ bool RocketelFS::begin()
 
   // init BLE Device Information Service (DIS)
   // set some reasonable default values
-  bledis.setManufacturer("Neil Jacklin | njtronics.com");
-  bledis.setModel("Mark 2");
+  bledis.setManufacturer(_bleManufacturerStr);
+  bledis.setModel(_bleModelStr);
   bledis.begin();
 
   // init BLE BAttery Service (BAS)
@@ -98,31 +95,41 @@ bool RocketelFS::begin()
   bletds              = BLEService(UUID128_SVC_TDS);
   bletds.begin(); // must call service.begin() before adding any characteristics
 
-  // TDS:timestamp_ms (uint16) characteristic
-  uint16_t defaultShortZero = 0;
+  // TDS:timestamp_ms (uint32) characteristic
   bletds_timestamp_ms = BLECharacteristic(UUID128_CHR_TDS_TIMESTAMP_MS);
   bletds_timestamp_ms.setProperties(CHR_PROPS_NOTIFY);
   bletds_timestamp_ms.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  bletds_timestamp_ms.setFixedLen(2);
+  bletds_timestamp_ms.setFixedLen(4);
   bletds_timestamp_ms.begin();
-  bletds_timestamp_ms.write(&defaultShortZero,2); // default value
 
-  // TDS:pressure_pa (float32) characteristic
-  float defaultFloatZero = 0.0f;
+  // TDS:timestamp_ms_str (utf8s) characteristic
+  bletds_timestamp_ms_str = BLECharacteristic(UUID128_CHR_TDS_TIMESTAMP_MS_STR);
+  bletds_timestamp_ms_str.setProperties(CHR_PROPS_NOTIFY);
+  bletds_timestamp_ms_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_timestamp_ms_str.setMaxLen(20); // "Time(ms):#####"
+  bletds_timestamp_ms_str.begin();
+
+  // TDS:pressure_pa (uint32) characteristic
   bletds_pressure_pa  = BLECharacteristic(UUID128_CHR_TDS_PRESSURE_PA);
   bletds_pressure_pa.setProperties(CHR_PROPS_NOTIFY);
   bletds_pressure_pa.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletds_pressure_pa.setFixedLen(4);
   bletds_pressure_pa.begin();
-  bletds_pressure_pa.write(&defaultFloatZero,4); // default value
 
-  // TDS:mode_string (string) characteristic
-  bletds_mode_string  = BLECharacteristic(UUID128_CHR_TDS_MODE_STRING);
-  bletds_mode_string.setProperties(CHR_PROPS_READ);
-  bletds_mode_string.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  bletds_mode_string.setMaxLen(8);
-  bletds_mode_string.begin();
-  bletds_mode_string.write("INIT"); // default value
+  // TDS:pressure_pa_str (utf8s) characteristic
+  bletds_pressure_pa_str  = BLECharacteristic(UUID128_CHR_TDS_PRESSURE_PA_STR);
+  bletds_pressure_pa_str.setProperties(CHR_PROPS_NOTIFY);
+  bletds_pressure_pa_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_pressure_pa_str.setMaxLen(20); // "P(Pa):######"
+  bletds_pressure_pa_str.begin();
+
+  // TDS:mode_str (string) characteristic
+  bletds_mode_str  = BLECharacteristic(UUID128_CHR_TDS_MODE_STR);
+  bletds_mode_str.setProperties(CHR_PROPS_READ);
+  bletds_mode_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_mode_str.setMaxLen(20); // "MODE:XXXXX"
+  bletds_mode_str.begin();
+  // bletds_mode_str.write("INIT"); // default value
 
   // BLE other services... TODO
 
@@ -138,7 +145,7 @@ bool RocketelFS::begin()
 
   // set mode to READ
   _mode = RFS_MODE_READ;
-  bletds_mode_string.write("READ");
+  bletds_mode_str.write("READ");
 
   // set initilized flag and exit
   _bInit = true;
@@ -153,13 +160,22 @@ uint32_t RocketelFS::getFlashJEDECID()
   return flash.getJEDECID();
 }
 
-// get pressure reading from pressure sensor
-float RocketelFS::readPressurePa() {
-  return bmp.readPressure();
+// read pressure sensor, set relevant private variables
+// note this includes setting altitude derived measurement
+void RocketelFS::readPressureSensor() {
+  // convention: set last sensor reading time immediately before read
+  _lastSensorReadingTimeMs = _lastPressureSensorReadingTimeMs = millis();
+  
+  // record pressure and temp measurements
+  _pressurePa = bmp.readPressure();
+  _tempDegC = bmp.readTemperature();
+
+  // compute altitude
+  computeAltitude();
 }
 
-// read and return battery voltage
-int RocketelFS::readBatteryLevel() {
+// read and return battery level
+int RocketelFS::readBattery() {
   Serial.print(F("DEBUG: analogRead(PIN_BATTERYADC) = "));
   Serial.println(analogRead(PIN_BATTERYADC));
   _batteryVoltage = ADC_LSB_MV * (float)analogRead(PIN_BATTERYADC) / 1000.0f;
@@ -174,11 +190,57 @@ int RocketelFS::readBatteryLevel() {
 // BUG: this always returns around 0.5V == 14% right now
 int RocketelFS::updateBLEBatteryLevel(bool newMeasurement = true) {
   if (newMeasurement)
-    blebas.write(readBatteryLevel());
+    blebas.write(readBattery());
   else
     blebas.write(_batteryLevel);
 
   return _batteryLevel;
+}
+
+// update all the characteristics of the BLE Telemetry Data Service
+// the behavior of the method is affected by _mode 
+void RocketelFS::updateBLETDS() {
+  uint32_t timestampMs_uint32 = (uint32_t) _lastSensorReadingTimeMs;
+  // TODO: think very carefully about what timestamp to report...
+  uint32_t pressurePa_uint32 = (uint32_t) _pressurePa;
+
+  // timestamp characteristics
+  // TODO: move to mode WRITE only?  but it's useful...
+  bletds_timestamp_ms.notify(&timestampMs_uint32,4);
+  sprintf(_bleTimestampMsStr,"Time(ms):%d",timestampMs_uint32);
+  bletds_timestamp_ms_str.notify(_bleTimestampMsStr);
+
+  // pressure characteristics
+  // TODO: move to mode WRITE only?  but it's useful...
+  bletds_pressure_pa.notify(&pressurePa_uint32,4);
+  sprintf(_blePressurePaStr,"P(Pa):%d",pressurePa_uint32);
+  bletds_pressure_pa_str.notify(_blePressurePaStr);
+
+  // altitude characteristics
+  // TODO
+
+  // mode-specific updates
+  switch (_mode) {
+    case RFS_MODE_READ:
+      // update mode characteristic
+      bletds_mode_str.write("MODE:READ");
+
+      // TODO
+
+      break;
+
+    case RFS_MODE_WRITE:
+      // update mode characteristic
+      bletds_mode_str.write("MODE:WRITE");
+
+      // TODO
+
+      break;
+
+    default:
+      Serial.print(F("ERROR: Invalid mode in updateBLETDS(): "));
+      Serial.println(_mode);
+  }
 }
 
 // Callback invoked when a BLE connection is made
@@ -208,4 +270,27 @@ void RocketelFS::bleDisconnectCallback(uint16_t conn_handle, uint8_t reason)
 }
 
 // private methods ------------------------------------------------------------
-// none yet
+
+// compute altitude
+// this will take the current _pressurePa, _altitudeAlgorithm, and related data,
+// and compute the alititude measurement, and update maxAltitude if necessary.
+// returns the computed altitude in m
+float RocketelFS::computeAltitude() {
+  // error checking
+  if ( strcmp(_altitudeAlgorithm,"1A") == 0 && _altitudeOffsetM != 0.0f ) 
+    Serial.println(F("WARNING: altitude offset not set right for algorithm 1A"));
+  if ( strcmp(_altitudeAlgorithm,"1B") == 0 && _pressureOffsetPa != 101325.0f ) 
+    Serial.println(F("WARNING: pressure offset not set right for algorithm 1B"));
+
+  // compute 
+  // note: calculation is the same for all algorithms, just the offsets change
+  _altitudeM = 44330.0f * (1.0f - pow(_pressurePa / _pressureOffsetPa, 0.1903f)) 
+               - _altitudeOffsetM;
+
+  // update max altitude if necessary
+  if (_altitudeM > _maxAltitudeM)
+    _maxAltitudeM = _altitudeM;
+  
+  // return altitude
+  return _altitudeM;
+}

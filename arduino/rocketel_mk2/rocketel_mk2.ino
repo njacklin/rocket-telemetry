@@ -30,43 +30,22 @@ void setup() {
 
 void loop() {
 
-  uint16_t timestampShortMs;
-  float pressurePa;
-  
   Serial.println("Looping...");
 
-  pressurePa = R.readPressurePa();
-  Serial.print("Pressure reading: ");
-  Serial.print(pressurePa);
-  Serial.println(" Pa");
-
-  R.readBatteryLevel();
+  // battery stuff
+  R.readBattery();
   Serial.print("Battery reading: ");
-  Serial.print(R.getBatteryVoltage());
+  Serial.print(R.getLastBatteryVoltage());
   Serial.print(" V, Level (0-100): ");
-  Serial.print(R.getBatteryLevel());
+  Serial.print(R.getLastBatteryLevel());
   Serial.println();
 
   R.updateBLEBatteryLevel(false);
 
-  // practice updating some BLE service characteristics
+  // practice new method calls
+  R.readPressureSensor();
 
-  switch ( R.getMode() ) {
-    case RFS_MODE_INIT :
-      R.bletds_mode_string.write("INIT");
-      break;
-    case RFS_MODE_READ : 
-      R.bletds_mode_string.write("READ");
-      break;
-    case RFS_MODE_WRITE : 
-      R.bletds_mode_string.write("WRITE");
-      break; 
-  }
-
-  timestampShortMs = millis();
-  R.bletds_timestamp_ms.notify(&timestampShortMs,2);
-  
-  R.bletds_pressure_pa.notify(&pressurePa,4);
+  R.updateBLETDS();
 
   Serial.println();
   delay(2000);
