@@ -29,11 +29,15 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+
+  uint16_t timestampShortMs;
+  float pressurePa;
+  
   Serial.println("Looping...");
 
+  pressurePa = R.readPressurePa();
   Serial.print("Pressure reading: ");
-  Serial.print(R.readPressurePa());
+  Serial.print(pressurePa);
   Serial.println(" Pa");
 
   R.readBatteryLevel();
@@ -44,6 +48,25 @@ void loop() {
   Serial.println();
 
   R.updateBLEBatteryLevel(false);
+
+  // practice updating some BLE service characteristics
+
+  switch ( R.getMode() ) {
+    case RFS_MODE_INIT :
+      R.bletds_mode_string.write("INIT");
+      break;
+    case RFS_MODE_READ : 
+      R.bletds_mode_string.write("READ");
+      break;
+    case RFS_MODE_WRITE : 
+      R.bletds_mode_string.write("WRITE");
+      break; 
+  }
+
+  timestampShortMs = millis();
+  R.bletds_timestamp_ms.notify(&timestampShortMs,2);
+  
+  R.bletds_pressure_pa.notify(&pressurePa,4);
 
   Serial.println();
   delay(2000);

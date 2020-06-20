@@ -71,13 +71,18 @@ bool RocketelFS::begin()
     Serial.println(F("ERROR: Could not begin() Bluefruit library."));
   }
 
+  // set connect and disconnect callbacks
+  Bluefruit.Periph.setConnectCallback(bleConnectCallback);
+  Bluefruit.Periph.setDisconnectCallback(bleDisconnectCallback);
+
+  // set Tx power and name
   Bluefruit.setTxPower(RFS_BLE_TXPOWER_READ);
   Bluefruit.setName(_bleName);
   // warning: Don't know if the above two lines need to be in that order.
   // I think each one adds something to the advertising data buffer.
   // TODO: look into docs/code to verify
 
-  // TODO add BLE services and characteristics
+  // add BLE services and characteristics
 
   // init BLE Device Information Service (DIS)
   // set some reasonable default values
@@ -88,6 +93,38 @@ bool RocketelFS::begin()
   // init BLE BAttery Service (BAS)
   blebas.begin();
   blebas.write(_batteryLevel);
+
+  // BLE Telemetry Data Service
+  bletds              = BLEService(UUID128_SVC_TDS);
+  bletds.begin(); // must call service.begin() before adding any characteristics
+
+  // TDS:timestamp_ms (uint16) characteristic
+  uint16_t defaultShortZero = 0;
+  bletds_timestamp_ms = BLECharacteristic(UUID128_CHR_TDS_TIMESTAMP_MS);
+  bletds_timestamp_ms.setProperties(CHR_PROPS_NOTIFY);
+  bletds_timestamp_ms.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_timestamp_ms.setFixedLen(2);
+  bletds_timestamp_ms.begin();
+  bletds_timestamp_ms.write(&defaultShortZero,2); // default value
+
+  // TDS:pressure_pa (float32) characteristic
+  float defaultFloatZero = 0.0f;
+  bletds_pressure_pa  = BLECharacteristic(UUID128_CHR_TDS_PRESSURE_PA);
+  bletds_pressure_pa.setProperties(CHR_PROPS_NOTIFY);
+  bletds_pressure_pa.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_pressure_pa.setFixedLen(4);
+  bletds_pressure_pa.begin();
+  bletds_pressure_pa.write(&defaultFloatZero,4); // default value
+
+  // TDS:mode_string (string) characteristic
+  bletds_mode_string  = BLECharacteristic(UUID128_CHR_TDS_MODE_STRING);
+  bletds_mode_string.setProperties(CHR_PROPS_READ);
+  bletds_mode_string.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_mode_string.setMaxLen(8);
+  bletds_mode_string.begin();
+  bletds_mode_string.write("INIT"); // default value
+
+  // BLE other services... TODO
 
   // set up BLE advertising
   Bluefruit.Advertising.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
@@ -101,6 +138,7 @@ bool RocketelFS::begin()
 
   // set mode to READ
   _mode = RFS_MODE_READ;
+  bletds_mode_string.write("READ");
 
   // set initilized flag and exit
   _bInit = true;
@@ -142,3 +180,32 @@ int RocketelFS::updateBLEBatteryLevel(bool newMeasurement = true) {
 
   return _batteryLevel;
 }
+
+// Callback invoked when a BLE connection is made
+//   conn_handle connection where this event happens
+void RocketelFS::bleConnectCallback(uint16_t conn_handle)
+{
+  // Get the reference to current connection
+  BLEConnection* connection = Bluefruit.Connection(conn_handle);
+
+  char central_name[32] = { 0 };
+  connection->getPeerName(central_name, sizeof(central_name));
+
+  Serial.print(F("DEBUG: BLE Connected to "));
+  Serial.println(central_name);
+}
+
+// Callback invoked when a BLE connection is dropped
+//   conn_handle connection where this event happens
+//   reason is a BLE_HCI_STATUS_CODE which can be found in ble_hci.h
+void RocketelFS::bleDisconnectCallback(uint16_t conn_handle, uint8_t reason)
+{
+  // (void) conn_handle;
+  // (void) reason;
+
+  Serial.print(F("DEBUG: BLE Disconnected, reason = 0x"));
+  Serial.println(reason, HEX);
+}
+
+// private methods ------------------------------------------------------------
+// none yet
