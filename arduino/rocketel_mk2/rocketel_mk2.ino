@@ -48,5 +48,5 @@ void loop() {
   R.updateBLETDS();
 
   Serial.println();
-  delay(2000);
+  delay(500);
 }
