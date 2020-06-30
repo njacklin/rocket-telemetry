@@ -5,3 +5,10 @@
 *.jpg
 *.JPG
 *alias
+*.pptx
+arduino/feather-express/example_adv_changename/
+arduino/feather-express/arduino_uf2/
+arduino/feather-express/docs/
+arduino/feather-sense/arduino_uf2/
+arduino/feather-sense/docs/
+ble/
