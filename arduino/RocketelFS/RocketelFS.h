@@ -33,8 +33,12 @@
 #define RFS_MODE_READ (1)
 #define RFS_MODE_WRITE (2)
 
-// data record length bytes
-#define RFS_DATA_RECORD_LEN (6)
+// data record params
+#define RFS_RECORD_FORMAT (1) 
+// format 1 = ( [uint16] timestamp_ms, [int16] pressure_pa - 100000, [int16] altitude_dm )
+#define RFS_RECORD_FORMAT1_BYTES (6) 
+
+#define RFS_RECORD_BUFFER_BYTES (6) // this should be the max of avaiable formats
 
 // BLE params
 #define RFS_BLE_TXPOWER_READ (2)
@@ -99,25 +103,29 @@ class RocketelFS
     bool begin();
     bool initialized() {return _bInit;}
 
+    // flash related methods
     uint32_t getFlashJEDECID();
+    bool readLastLogInfo();
 
+    bool openNewLog();
+    bool writeFlashRecord();
+    bool flushFlashWrites();
+
+    // battery related methods
     int readBattery();
     float getLastBatteryVoltage() {return _batteryVoltage;}
     int getLastBatteryLevel() {return _batteryLevel;}
     
-    float readPressureSensor();
+    // pressure+temperature sensor methods
+    float readPressureTempSensor();
     float getLastPresurePa() {return _pressurePa;}
     float getLastAltitudeM() {return _altitudeM;}
     float getMaxAltitudeM() {return _maxAltitudeM;}
 
     bool changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt = true);
 
+    // mode functions
     int getMode() {return _mode;}
-
-    int updateBLEBatteryLevel(bool newMeasurement);
-    // might want to make low level functions like this private eventually
-
-    void updateBLETDS();
 
     // expose BLE services and characteristics
     BLEDis bledis; // DIS (Device Information Service) helper object
@@ -145,8 +153,19 @@ class RocketelFS
     static void bleDisconnectCallback(uint16_t conn_handle, uint8_t reason);
     // note: callbacks must be declared static
 
+    // BLE methods
+    void updateBLETDS();
+
+    int updateBLEBatteryLevel(bool newMeasurement);
+    // might want to make low level functions like this private eventually
+
     // misc
     float convertDegCtoF(float degC) { return degC * 1.8f + 32.0f; }
+
+    // debug/test functions
+    #ifdef RFS_DEBUG
+    float setMaxAltitudeM(float valueM) { return _maxAltitudeM = valueM; }
+    #endif
 
   private:
 
@@ -155,6 +174,22 @@ class RocketelFS
 
     // Mode
     int _mode = 0;
+
+    // Flash fields
+    File _file; // can only have one open, so might as well reuse
+    char _filename[64] = ""; 
+    long _lastFlashFlushms;
+    uint32_t _numRecordsWritten = 0;
+
+    int16_t _lastLogIndex = -1;
+    int16_t _currentLogIndex = -1;
+    int16_t _recordFormat = RFS_RECORD_FORMAT;
+    float _lastMaxAltitudeM = 0.0f;
+    char _lastAltitudeRef[4] = "---";
+    char _lastAltitudeAlgorithm[3] = "--";
+    float _lastPressureOffsetPa = 0.0f;
+    float _lastAltitudeOffsetM = 0.0f;
+    int32_t _lastNumRecords = 0;
 
     // BLE 
     char _bleName[32] = "RocketelFS-1"; // TODO: verify max length
@@ -182,7 +217,7 @@ class RocketelFS
     char _altitudeAlgorithm[3] = "1A";
     char _altitudeStrUnits[3] = "ft";
 
-    unsigned long _lastPressureSensorReadingTimeMs = 0L; 
+    unsigned long _lastPressureTempSensorReadingTimeMs = 0L; 
 
     // accelerometer, magnetometer data
     // TODO: add
@@ -191,9 +226,11 @@ class RocketelFS
     unsigned long _lastSensorReadingTimeMs = 0L;
 
     // buffers
-    byte _rwBuffer[RFS_DATA_RECORD_LEN];
+    byte _recordBuffer[RFS_RECORD_BUFFER_BYTES];
 
     // private methods
+
+    // pressure and temp sensor
     float computeAltitude();
 
 };

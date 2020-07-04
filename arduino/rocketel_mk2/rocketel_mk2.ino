@@ -28,6 +28,8 @@ void setup() {
 
 }
 
+int loopCount = 0;
+  
 void loop() {
 
   Serial.println("Looping...");
@@ -43,10 +45,33 @@ void loop() {
   R.updateBLEBatteryLevel(false);
 
   // practice new method calls
-  R.readPressureSensor();
+  R.readPressureTempSensor();
 
   R.updateBLETDS();
 
+  if ( loopCount == 10 ) {
+    R.setMaxAltitudeM(359.5f);
+    Serial.print("DEBUG: Set max altitude = ");
+    Serial.print(R.getMaxAltitudeM());
+    Serial.println();
+  }
+
+  if ( loopCount == 11 ) {
+    Serial.println("DEBUG: opening new log");
+    R.openNewLog();
+  }
+
+  if ( loopCount >= 12 && loopCount <= 25 ) {
+    Serial.println("DEBUG: writing record");
+    R.writeFlashRecord();
+  }
+
+  if ( loopCount == 30 ) {
+    Serial.println("DEBUG: flush flash writes");
+    R.flushFlashWrites();
+  }
+    
   Serial.println();
+  loopCount++;
   delay(500);
 }

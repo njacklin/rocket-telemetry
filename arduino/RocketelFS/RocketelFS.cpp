@@ -191,12 +191,34 @@ uint32_t RocketelFS::getFlashJEDECID()
   return flash.getJEDECID();
 }
 
-// read pressure sensor, set relevant private variables
+// read LASTLOGINFO.TXT
+// return true if succeed (i.e. if it exists and was read successfully)
+bool RocketelFS::readLastLogInfo()
+{
+  String lineStr;
+
+  // try to open LASTLOG.TXT
+  _file = fatfs.open("LASTLOG.TXT",FILE_READ);
+  if (!_file)
+    Serial.println(F("ERROR: could not open LASTLOG.TXT"));
+
+  // read contents and store values in private variables
+  lineStr = _file.readString();
+  _lastLogIndex = lineStr.toInt();
+
+  // get last number of records
+  // TODO
+
+  // if we get to the end, assume everything went okay
+  return true;
+}
+
+// read pressure+temperature sensor, set relevant private variables
 // note this includes setting altitude derived measurement
 // returns pressure in pa as float
-float RocketelFS::readPressureSensor() {
+float RocketelFS::readPressureTempSensor() {
   // convention: set last sensor reading time immediately before read
-  _lastSensorReadingTimeMs = _lastPressureSensorReadingTimeMs = millis();
+  _lastSensorReadingTimeMs = _lastPressureTempSensorReadingTimeMs = millis();
   
   // record pressure and temp measurements
   _pressurePa = bmp.readPressure();
@@ -216,11 +238,11 @@ bool RocketelFS::changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt) {
   // update offsets
   if ( strcmp(algorithmStr,"1A") == 0 ) {
     _altitudeOffsetM = 0.0f;
-    _pressureOffsetPa = readPressureSensor();
+    _pressureOffsetPa = readPressureTempSensor();
   } else if  ( strcmp(algorithmStr,"1B") == 0 ) {
     _pressureOffsetPa = 101325.0f;
     _altitudeOffsetM = 
-      44330.0f * (1.0f - pow(readPressureSensor() / _pressureOffsetPa,0.1903));
+      44330.0f * (1.0f - pow(readPressureTempSensor() / _pressureOffsetPa,0.1903));
   // } else if  ( strcmp(algorithmStr,"2A") ) { // TODO
   // } else if  ( strcmp(algorithmStr,"2B") ) { // TODO
   } else {
@@ -352,13 +374,178 @@ void RocketelFS::bleDisconnectCallback(uint16_t conn_handle, uint8_t reason)
   Serial.println(reason, HEX);
 }
 
+
+// Create/open new log file.  
+// This function will first create a LASTLOGINDEX.TXT, then LOGNN.META, 
+// and then open a LOGNN.DAT for writing
+bool RocketelFS::openNewLog() 
+{
+  char ones, tens;
+
+  // find first available log index
+
+  // try to open files LOGNN.DAT, increasing 
+  //   NN from 00 to 99.  if all files are full, write to LOG99.DAT.
+  strcpy(_filename,"LOGNN.DAT");
+  for ( tens = '0'; tens <= '9'; tens++) 
+  {
+    _filename[3] = tens;
+    for ( ones = '0'; ones <= '9'; ones++ ) 
+    {
+      _filename[4] = ones;
+      
+      if ( !fatfs.exists(_filename) )
+        goto BREAKOUTFORFOR;
+    }
+  }
+  BREAKOUTFORFOR:
+
+  // filename now contains the first available log file name, "LOGNN.DAT"
+
+  // set _currentLogIndex for future reference
+  _currentLogIndex = 10*(tens - '0') + (ones - '0'); 
+
+  // write LASTLOGINDEX.TXT with current log index
+  fatfs.remove("LASTLOG.TXT"); // no overwrite mode, so delete if it exists
+  _file = fatfs.open("LASTLOG.TXT",FILE_WRITE); // WRITE/APPEND
+  if (!_file)
+    Serial.println("ERROR: could not open LASTLOG.TXT");
+  
+  // write log index as chars
+  _file.write(tens); 
+  _file.write(ones); 
+  _file.println();
+
+  // close "LASTLOGINDEX.TXT"
+  _file.close();
+
+  // write LOGNN.META
+  strcpy(&_filename[6],"META"); // change _filename to "LOGNN.META"
+  fatfs.remove(_filename); // no overwrite mode, so delete if it exists
+  _file = fatfs.open(_filename,FILE_WRITE); // WRITE/APPEND
+  if (!_file) {
+    Serial.print("ERROR: could not open file: ");
+    Serial.println(_filename);
+  }
+  
+  // write log index (redundant, but good integrity checking)
+  _file.print("INDEX:"); 
+  _file.write(tens); 
+  _file.write(ones); 
+  _file.println();
+
+  // write record format
+  _file.print("FORMAT:"); _file.println(RFS_RECORD_FORMAT);
+
+  // write altitude reference
+  _file.print("ALTREF:"); _file.println(_altitudeRef);
+
+  // write altitude algorithm
+  _file.print("ALTALGO:"); _file.println(_altitudeAlgorithm);
+  // write pressure offset
+  _file.print("P0:"); _file.println(_pressureOffsetPa);
+  // write altitude offset
+  _file.print("A0:"); _file.println(_altitudeOffsetM);
+
+  // close "LOGNN.META"
+  _file.close();
+
+  // zero out num records written counter
+  _numRecordsWritten = 0;
+
+  // open LOGNN.DAT
+  strcpy(&_filename[6],"DAT"); // change _filename to "LOGNN.DAT"
+  return _file.open(_filename,FILE_WRITE);
+
+}
+
+// write record to flash file
+// returns true on success and false on failure
+bool RocketelFS::writeFlashRecord() 
+{
+  // for reference
+  // format 1 = ( [uint16] timestamp_ms, [int16] pressure_pa - 100000, [int16] altitude_dm )
+
+  uint16_t timestampmsData;
+  int16_t pressureData;
+  int16_t altitudedmData;
+
+  if ( RFS_RECORD_FORMAT == 1 ) {
+      
+    // prepare data values for writing
+    timestampmsData = _lastSensorReadingTimeMs;
+    pressureData = _pressurePa - 100000.0f + 0.5f; // add 0.5 so that truncation does rounding
+    altitudedmData = _altitudeM * 10.0f + 0.5f; // add 0.5 so that truncation does rounding
+
+    // fill up record buffer
+    _recordBuffer[0] = timestampmsData;
+    _recordBuffer[1] = timestampmsData >> 8;
+    _recordBuffer[2] = pressureData;
+    _recordBuffer[3] = pressureData >> 8;
+    _recordBuffer[4] = altitudedmData;
+    _recordBuffer[5] = altitudedmData >> 8;
+  }
+  else {
+    Serial.print(F("ERROR: in RocketelFS::writeFlashRecord(): unsupported RFS_RECORD_FORMAT = "));
+    Serial.print(RFS_RECORD_FORMAT);
+    Serial.println();
+    return false;
+  }
+
+  // write record
+  for (int i = 0; i < RFS_RECORD_BUFFER_BYTES; i++ )
+    _file.write(_recordBuffer[i]);     
+
+  // increment num record counter
+  _numRecordsWritten++; 
+
+  // exit 
+  return true;  
+
+}
+
+// flush flash writes
+// Files need to be closed to committed to flash (otherwise they are just in memory).
+// Also, write number of records to LASTLOGINFO.TXT
+// Returns true on success, false on failure.
+bool RocketelFS::flushFlashWrites()
+{
+  _lastFlashFlushms = millis();
+
+  // close .DAT file
+  _file.close();
+
+  // append num records to .META file
+  strcpy(&_filename[6],"META"); // change _filename to "LOGNN.META"
+  fatfs.remove(_filename); // no overwrite mode, so delete if it exists
+  _file = fatfs.open(_filename,FILE_WRITE); // WRITE/APPEND
+  // if (!_file) { // need to be fast, let's skip this for now
+  //   Serial.print("ERROR: could not open file: ");
+  //   Serial.println(_filename);
+  // }
+  
+  // write log index (redundant, but good integrity checking)
+  _file.print("NR:"); 
+  _file.print(_numRecordsWritten); 
+  _file.println();
+
+  // close .META file
+  _file.close();
+
+  // reopen .DAT file
+  strcpy(&_filename[6],"DAT"); // change _filename to "LOGNN.DAT"
+  _file = fatfs.open(_filename, FILE_WRITE); // WRITE/APPEND 
+       
+}
+
 // private methods ------------------------------------------------------------
 
 // compute altitude
 // this will take the current _pressurePa, _altitudeAlgorithm, and related data,
 // and compute the alititude measurement, and update maxAltitude if necessary.
 // returns the computed altitude in m
-float RocketelFS::computeAltitude() {
+float RocketelFS::computeAltitude() 
+{
   // error checking
   if ( strcmp(_altitudeAlgorithm,"1A") == 0 && _altitudeOffsetM != 0.0f ) {
     Serial.println(F("WARNING: altitude offset not set right for algorithm 1A"));
@@ -382,3 +569,5 @@ float RocketelFS::computeAltitude() {
   // return altitude
   return _altitudeM;
 }
+
+
