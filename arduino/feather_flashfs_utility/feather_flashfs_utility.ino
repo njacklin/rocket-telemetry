@@ -87,6 +87,23 @@ void loop() { // LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOO
       Serial.println(F("[T] Read Text file, [B] Read Binary file, [D] Delete file"));
       Serial.println();
 
+      // DEBUG
+      Serial.println("DEBUG: trying to open a file with direct string");
+      file = fatfs.open("LASTLOG.TXT",FILE_READ);
+      if (file)
+        Serial.println("Opened LASTLOG.TXT successfully");
+      else
+        Serial.println("Error opening LASTLOG.TXT");
+      Serial.println(file.readString());
+      file.close();
+
+      Serial.println("DEBUG: trying to delete LASTLOGINDEX.TXT");
+      cmdResult = fatfs.remove("LASTLOGINDEX.TXT");
+      if (cmdResult)
+        Serial.println("Deleted LASTLOGINDEX.TXT");
+      else
+        Serial.println("Error deleting LASTLOGINDEX.TXT");
+
       // set printed intro flag
       printedIntro = true;
   
