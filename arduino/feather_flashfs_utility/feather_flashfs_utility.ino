@@ -9,7 +9,6 @@
 #include <SdFat.h>
 #include <Adafruit_SPIFlash.h>
 
-
 // On-board external flash (QSPI or SPI) macros should already
 // defined in your board variant if supported
 // - EXTERNAL_FLASH_USE_QSPI
@@ -79,30 +78,13 @@ void loop() { // LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOO
   
       // list files 
       Serial.print(F("\n\n\nList of files:\n\n"));
-      fatfs.ls(LS_SIZE);
+      fatfs.ls(LS_SIZE); // () for file names only, (LS_SIZE) for size and file names
       
       // solicit user input
       Serial.println();
       Serial.println(F("Enter \"[TBD]:FILENAME\" to "));
       Serial.println(F("[T] Read Text file, [B] Read Binary file, [D] Delete file"));
       Serial.println();
-
-      // DEBUG
-      Serial.println("DEBUG: trying to open a file with direct string");
-      file = fatfs.open("LASTLOG.TXT",FILE_READ);
-      if (file)
-        Serial.println("Opened LASTLOG.TXT successfully");
-      else
-        Serial.println("Error opening LASTLOG.TXT");
-      Serial.println(file.readString());
-      file.close();
-
-      Serial.println("DEBUG: trying to delete LASTLOGINDEX.TXT");
-      cmdResult = fatfs.remove("LASTLOGINDEX.TXT");
-      if (cmdResult)
-        Serial.println("Deleted LASTLOGINDEX.TXT");
-      else
-        Serial.println("Error deleting LASTLOGINDEX.TXT");
 
       // set printed intro flag
       printedIntro = true;
@@ -122,9 +104,9 @@ void loop() { // LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOO
     {
       char cmd = Serial.read();
       Serial.read(); // throw away ":" character
-      String readfilenameStr = Serial.readString();
-      char readfilename[64];
-      strcpy(readfilename,readfilenameStr.c_str());
+      String filenameStr = Serial.readString();
+      strcpy(filename,filenameStr.c_str());
+      filename[strlen(filename)-1] = '\0'; // replace trailing '\n' with '\0'
   
       // if there is extra data in serial buffer, read it and clean out buffer
       while ( Serial.read() > 0 );
@@ -134,11 +116,12 @@ void loop() { // LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOO
         Serial.print(F("Received command: "));
         Serial.println(cmd);
         
-        Serial.print(F("  for file: "));
-        Serial.println(readfilename);
+        Serial.print(F("  for file: '"));
+        Serial.print(filename);
+        Serial.println("'");
   
         // open file
-        file = fatfs.open(readfilename,FILE_READ);
+        file = fatfs.open(filename,FILE_READ);
 
         if (!file) {
           Serial.println(F("ERROR: Cannot open file for reading"));
@@ -169,10 +152,11 @@ void loop() { // LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOO
   
      } else if ( cmd == 'D' )  {
       
-       Serial.print(F("Deleting file: "));
-       Serial.println(readfilename);
+       Serial.print(F("Deleting file: '"));
+       Serial.print(filename);
+       Serial.println("'");
 
-       cmdResult = fatfs.remove(readfilename);
+       cmdResult = fatfs.remove(filename);
 
        if (cmdResult) 
          Serial.println(F("File deleted successfully."));
