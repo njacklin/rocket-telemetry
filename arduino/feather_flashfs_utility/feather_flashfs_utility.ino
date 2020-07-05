@@ -1,6 +1,8 @@
-// FlashFileReader
-// utility sketch to read flash fs file system
-// read back text files
+// feather_flashfs_utility
+// Utility sketch to read flash fs file system.
+// Read back text files.
+// Instead of implementing erase all or format commands,
+//   it is recommended to run Aafruit SPIFlash SdFat_format.ino instead.
 
 
 // INIT -------------------------------------------------------------------------
