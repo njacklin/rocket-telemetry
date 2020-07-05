@@ -108,7 +108,8 @@ void loop() { // LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOO
       Serial.read(); // throw away ":" character
       String filenameStr = Serial.readString();
       strcpy(filename,filenameStr.c_str());
-      filename[strlen(filename)-1] = '\0'; // replace trailing '\n' with '\0'
+      if ( filename[strlen(filename)-1] == '\n' )
+        filename[strlen(filename)-1] = '\0'; // replace trailing '\n' with '\0'
   
       // if there is extra data in serial buffer, read it and clean out buffer
       while ( Serial.read() > 0 );
