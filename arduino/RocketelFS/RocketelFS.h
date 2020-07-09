@@ -111,6 +111,9 @@ class RocketelFS
     bool writeFlashRecord();
     bool flushFlashWrites();
 
+    bool openLogForRead(int logIndex);
+    bool closeFlashFile();
+
     int getCurrentLogIndex() {return _currentLogIndex;}
 
     // battery related methods

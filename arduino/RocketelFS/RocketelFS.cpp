@@ -537,6 +537,36 @@ bool RocketelFS::flushFlashWrites()
        
 }
 
+// open LOGNN.DAT for reading
+// return true on succes, false on failure
+bool RocketelFS::openLogForRead(int logIndex)
+{
+
+  // form filename
+  strcpy(_filename,"LOGNN.DAT");
+  _filename[3] = '0' + (logIndex % 10);
+  _filename[4] = '0' + (logIndex/10);
+
+  Serial.print(F("DEBUG: Opening file for reading: "));
+  Serial.println(_filename);
+
+  // open file
+  if ( fatfs.open(_filename, FILE_READ) )
+    _currentLogIndex = logIndex;
+    return true;
+  else
+    _currentLogIndex = -1;
+    return false;
+
+}
+
+// close flash file
+// return true on success, false on failure
+bool RocketelFS::closeFlashFile() 
+{
+  return _file.close();
+}
+
 // private methods ------------------------------------------------------------
 
 // compute altitude
