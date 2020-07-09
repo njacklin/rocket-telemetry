@@ -510,14 +510,13 @@ bool RocketelFS::writeFlashRecord()
 // Returns true on success, false on failure.
 bool RocketelFS::flushFlashWrites()
 {
-  _lastFlashFlushms = millis();
-
   // close .DAT file
   _file.close();
 
+  _lastFlashFlushms = millis();
+
   // append num records to .META file
   strcpy(&_filename[6],"META"); // change _filename to "LOGNN.META"
-  fatfs.remove(_filename); // no overwrite mode, so delete if it exists
   _file = fatfs.open(_filename,FILE_WRITE); // WRITE/APPEND
   // if (!_file) { // need to be fast, let's skip this for now
   //   Serial.print("ERROR: could not open file: ");
