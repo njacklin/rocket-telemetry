@@ -31,7 +31,16 @@ bool RocketelFS::begin()
   pinMode(PIN_USERSW,INPUT);
   // set up built-in LED for output
   pinMode(LED_BUILTIN, OUTPUT);
-  // setup battery ADC PIN: none necessary
+  // setup battery ADC 
+  // following the lead of https://learn.adafruit.com/adafruit-feather-sense/nrf52-adc
+  // set the analog reference to 3.0V (default = 3.6V)
+  analogReference(AR_INTERNAL_3_0);
+  // set the resolution to 12-bit (0..4095)
+  analogReadResolution(12); // Can be 8, 10, 12 or 14
+  delay(100); // delay 100 ms to let ADC settle
+  // set _batteryADCvoltPerLsb = (voltage_div_comp) * (ADC voltage max / ADC output max)
+  _batteryADCvoltPerLsb = 2.0f * ( 3.0f / 4096.0f );
+  readBattery();
 
   // intitalize flash and mount FAT file system
   if (!flash.begin()) {
@@ -259,17 +268,40 @@ bool RocketelFS::changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt) {
   // recompute altitude
   computeAltitude();
 
+  #ifdef RFS_DEBUG
   Serial.println(F("DEBUG: exiting changeAltitudeAlgorithm() successfully."));
+  #endif 
+
   return true;
 }
 
 // read and return battery level
+// based on https://learn.adafruit.com/adafruit-feather-sense/nrf52-adc
 int RocketelFS::readBattery() {
+  #ifdef RFS_DEBUG
   Serial.print(F("DEBUG: analogRead(PIN_BATTERYADC) = "));
   Serial.println(analogRead(PIN_BATTERYADC));
-  _batteryVoltage = ADC_LSB_MV * (float)analogRead(PIN_BATTERYADC) / 1000.0f;
-  _batteryLevel = _batteryVoltage / RFS_BATTERY_VOLTAGE_100PCT * 100.0f + 0.5f;
-  _batteryLevel = constrain(_batteryLevel,0,100);
+  #endif 
+
+  _batteryVoltage = _batteryADCvoltPerLsb * (float)analogRead(PIN_BATTERYADC);
+
+  #ifdef RFS_DEBUG
+  Serial.print("DEBUG: battery voltage (V) = ");
+  Serial.println(_batteryVoltage);
+  #endif
+
+  if ( _batteryVoltage < 3.3f ) {
+    _batteryLevel = 0;
+  } else if (_batteryVoltage < 3.6f ) {
+    _batteryLevel =  (_batteryVoltage - 3.3f) / 0.030f;
+  } else {
+    _batteryLevel =  10.0f + ((_batteryVoltage - 3.6f) * 150.0f ) + 0.5f;  
+  }
+
+  #ifdef RFS_DEBUG
+  Serial.print("DEBUG: battery level (%) = ");
+  Serial.println(_batteryLevel);
+  #endif 
 
   return _batteryLevel;
 }
@@ -358,8 +390,10 @@ void RocketelFS::bleConnectCallback(uint16_t conn_handle)
   char central_name[32] = { 0 };
   connection->getPeerName(central_name, sizeof(central_name));
 
+  #ifdef RFS_DEBUG
   Serial.print(F("DEBUG: BLE Connected to "));
   Serial.println(central_name);
+  #endif
 }
 
 // Callback invoked when a BLE connection is dropped
@@ -369,9 +403,10 @@ void RocketelFS::bleDisconnectCallback(uint16_t conn_handle, uint8_t reason)
 {
   // (void) conn_handle;
   // (void) reason;
-
+  #ifdef RFS_DEBUG
   Serial.print(F("DEBUG: BLE Disconnected, reason = 0x"));
   Serial.println(reason, HEX);
+  #endif 
 }
 
 
@@ -547,8 +582,10 @@ bool RocketelFS::openLogForRead(int logIndex)
   _filename[3] = '0' + (logIndex / 10);
   _filename[4] = '0' + (logIndex % 10);
 
+  #ifdef RFS_DEBUG
   Serial.print(F("DEBUG: Opening file for reading: "));
   Serial.println(_filename);
+  #endif 
 
   // open file
   if ( fatfs.open(_filename, FILE_READ) ) {
@@ -579,8 +616,10 @@ float RocketelFS::computeAltitude()
   // error checking
   if ( strcmp(_altitudeAlgorithm,"1A") == 0 && _altitudeOffsetM != 0.0f ) {
     Serial.println(F("WARNING: altitude offset not set right for algorithm 1A"));
+    #ifdef RFS_DEBUG
     Serial.print(F("DEBUG: _altitudeOffsetM = ")); 
     Serial.println(_altitudeOffsetM);
+    #endif 
   }
   
   if ( strcmp(_altitudeAlgorithm,"1B") == 0 && _pressureOffsetPa != 101325.0f ) { 

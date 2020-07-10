@@ -59,6 +59,9 @@ void loop() {
   if ( loopCount == 11 ) {
     Serial.println("DEBUG: opening new log");
     R.openNewLog();
+    
+    Serial.print("DEBUG: R.currentLogIndex() = ");
+    Serial.println(R.getCurrentLogIndex());
   }
 
   if ( loopCount >= 12 && loopCount <= 25 ) {
@@ -69,6 +72,11 @@ void loop() {
   if ( loopCount == 30 ) {
     Serial.println("DEBUG: flush flash writes");
     R.flushFlashWrites();
+  }
+  
+  if ( loopCount == 32 ) {
+    Serial.println("DEBUG: open file for reading");
+    R.openLogForRead(7);
   }
     
   Serial.println();

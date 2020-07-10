@@ -3,6 +3,8 @@
   Library for Model Rocket Telemetry Project using Adafruit Feather nRF5280 Sense
   Created by Neil Jacklin, June 17, 2020.
   MIT License.
+
+  Set RFS_DEBUG variable to enable debug messages.
 */
 
 #ifndef ROCKETEL_FS_H
@@ -21,8 +23,6 @@
 
 // ADC pin for reading battery voltage
 #define PIN_BATTERYADC PIN_A6
-#define ADC_LSB_MV (0.87890625f)
-#define RFS_BATTERY_VOLTAGE_100PCT (3.7f)
 
 // pin for user switch
 #define PIN_USERSW PIN_BUTTON1
@@ -209,7 +209,8 @@ class RocketelFS
 
     // battery voltage and level
     float _batteryVoltage = 0.0f;
-    int _batteryLevel = 0;
+    int _batteryLevel = 0;  // 0 - 100
+    float _batteryADCvoltPerLsb = 0.0f; // assigned in begin()
 
     // pressure and temperature data, calculated altitude, and altitude settings
     float _pressurePa = 0.0f;
