@@ -298,6 +298,8 @@ int RocketelFS::readBattery() {
     _batteryLevel =  10.0f + ((_batteryVoltage - 3.6f) * 150.0f ) + 0.5f;  
   }
 
+  _batteryLevel = constrain(_batteryLevel,0,100);
+
   #ifdef RFS_DEBUG
   Serial.print("DEBUG: battery level (%) = ");
   Serial.println(_batteryLevel);
