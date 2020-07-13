@@ -5,7 +5,6 @@
   MIT License.
 */
 
-#include "Arduino.h"
 #include "RocketelFS.h"
 
 // globals --------------------------------------------------------------------
@@ -103,7 +102,7 @@ bool RocketelFS::begin()
   blebas.begin();
   blebas.write(_batteryLevel);
 
-  // BLE Telemetry Data Service
+  // BLE Telemetry Data Service (TDS)
   bletds              = BLEService(UUID128_SVC_TDS);
   bletds.begin(); // must call service.begin() before adding any characteristics
 
@@ -171,7 +170,147 @@ bool RocketelFS::begin()
   bletds_mode_str.begin();
   // bletds_mode_str.write("INIT"); // default value
 
-  // BLE other services... TODO
+  // BLE Telemetry Config Service (TCFGS)
+  bletcfgs = BLEService(UUID128_SVC_TCFGS);
+  bletcfgs.begin(); // must call service.begin() before adding any characteristics
+
+  // TCFGS:altitude_algorithm_str (utf8s) characteristic
+  bletcfgs_altitude_algorithm_str = BLECharacteristic(UUID128_CHR_TCFGS_ALTITUDE_ALGORITHM_STR);
+  bletcfgs_altitude_algorithm_str.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcfgs_altitude_algorithm_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcfgs_altitude_algorithm_str.setFixedLen(2); // {'1A','1B','2A','2B'} 
+  bletcfgs_altitude_algorithm_str.begin();
+
+  // TCFGS:altitude_ref_str (utf8s) characteristic
+  bletcfgs_altitude_ref_str = BLECharacteristic(UUID128_CHR_TCFGS_ALTITUDE_REF_STR);
+  bletcfgs_altitude_ref_str.setProperties(CHR_PROPS_READ);
+  bletcfgs_altitude_ref_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcfgs_altitude_ref_str.setFixedLen(3); // {'MSL','AGL'} 
+  bletcfgs_altitude_ref_str.begin();
+  bletcfgs_altitude_ref_str.write("AGL"); // default value
+
+  // TCFGS:pressure_offset_pa (float) characteristic
+  bletcfgs_pressure_offset_pa = BLECharacteristic(UUID128_CHR_TCFGS_PRESSURE_OFFSET_PA);
+  bletcfgs_pressure_offset_pa.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcfgs_pressure_offset_pa.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcfgs_pressure_offset_pa.setFixedLen(4);  
+  bletcfgs_pressure_offset_pa.begin();
+
+  // TCFGS:altitude_offset_m (float) characteristic
+  bletcfgs_altitude_offset_m = BLECharacteristic(UUID128_CHR_TCFGS_ALTITUDE_OFFSET_M);
+  bletcfgs_altitude_offset_m.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcfgs_altitude_offset_m.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcfgs_altitude_offset_m.setFixedLen(4);  
+  bletcfgs_altitude_offset_m.begin();
+
+  // TCFGS:altitude_str_units (utf8s) characteristic
+  bletcfgs_altitude_str_units = BLECharacteristic(UUID128_CHR_TCFGS_ALTITUDE_REF_STR);
+  bletcfgs_altitude_str_units.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcfgs_altitude_str_units.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcfgs_altitude_str_units.setMaxLen(2); // {'m','ft'} 
+  bletcfgs_altitude_str_units.begin();
+
+  // TCFGS:last_log_index (uint8) characteristic
+  bletcfgs_altitude_str_units = BLECharacteristic(UUID128_CHR_TCFGS_LAST_LOG_INDEX);
+  bletcfgs_altitude_str_units.setProperties(CHR_PROPS_READ);
+  bletcfgs_altitude_str_units.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcfgs_altitude_str_units.setFixedLen(1); 
+  bletcfgs_altitude_str_units.begin();
+  
+  // BLEService bletcmds;
+  //   BLECharacteristic bletcmds_goto_mode_read;
+  //   BLECharacteristic bletcmds_goto_mode_write;
+  //   BLECharacteristic bletcmds_open_log;
+  //   BLECharacteristic bletcmds_delete_log;
+  //   BLECharacteristic bletcmds_transfer_log_uart;
+  //   BLECharacteristic bletcmds_erase_all;
+  //   BLECharacteristic bletcmds_read_log_index;
+  //   BLECharacteristic bletcmds_ready;
+  //   BLECharacteristic bletcmds_last_cmd_error_flag;
+  //   BLECharacteristic bletcmds_error_msg;
+
+  // BLE Telemetry Command Service (TCFGS)
+  bletcmds = BLEService(UUID128_SVC_TCMDS);
+  bletcmds.begin(); // must call service.begin() before adding any characteristics
+
+  // TCMDS:goto_mode_read (uint8) characteristic
+  bletcmds_goto_mode_read = BLECharacteristic(UUID128_CHR_TCMDS_GOTO_MODE_READ);
+  bletcmds_goto_mode_read.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcmds_goto_mode_read.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_goto_mode_read.setFixedLen(1); 
+  bletcmds_goto_mode_read.begin();
+  bletcmds_goto_mode_read.write8(0);
+
+  // TCMDS:goto_mode_write (uint8) characteristic
+  bletcmds_goto_mode_write = BLECharacteristic(UUID128_CHR_TCMDS_GOTO_MODE_WRITE);
+  bletcmds_goto_mode_write.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcmds_goto_mode_write.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_goto_mode_write.setFixedLen(1); 
+  bletcmds_goto_mode_write.begin();
+  bletcmds_goto_mode_write.write8(0);
+
+  // TCMDS:open_log (uint8) characteristic
+  bletcmds_open_log = BLECharacteristic(UUID128_CHR_TCMDS_OPEN_LOG);
+  bletcmds_open_log.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcmds_open_log.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_open_log.setFixedLen(1); 
+  bletcmds_open_log.begin();
+  bletcmds_open_log.write8(0);
+
+  // TCMDS:delete_log (uint8) characteristic
+  bletcmds_delete_log = BLECharacteristic(UUID128_CHR_TCMDS_DELETE_LOG);
+  bletcmds_delete_log.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcmds_delete_log.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_delete_log.setFixedLen(1); 
+  bletcmds_delete_log.begin();
+  bletcmds_delete_log.write8(0);
+
+  // TCMDS:transfer_log_uart (uint8) characteristic
+  bletcmds_transfer_log_uart = BLECharacteristic(UUID128_CHR_TCMDS_TRANSFER_LOG_UART);
+  bletcmds_transfer_log_uart.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcmds_transfer_log_uart.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_transfer_log_uart.setFixedLen(1); 
+  bletcmds_transfer_log_uart.begin();
+  bletcmds_transfer_log_uart.write8(0);
+
+  // TCMDS:erase_all (uint8) characteristic
+  bletcmds_erase_all = BLECharacteristic(UUID128_CHR_TCMDS_ERASE_ALL);
+  bletcmds_erase_all.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcmds_erase_all.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_erase_all.setFixedLen(1); 
+  bletcmds_erase_all.begin();
+  bletcmds_erase_all.write8(0);
+
+  // TCMDS:log_index (uint8) characteristic
+  bletcmds_log_index = BLECharacteristic(UUID128_CHR_TCMDS_LOG_INDEX);
+  bletcmds_log_index.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcmds_log_index.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_log_index.setFixedLen(1); 
+  bletcmds_log_index.begin();
+  bletcmds_log_index.write8(0);
+
+  // TCMDS:ready (uint8) characteristic
+  bletcmds_ready = BLECharacteristic(UUID128_CHR_TCMDS_READY);
+  bletcmds_ready.setProperties(CHR_PROPS_NOTIFY);
+  bletcmds_ready.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_ready.setFixedLen(1); 
+  bletcmds_ready.begin();
+  bletcmds_ready.notify8(0);
+
+  // TCMDS:last_cmd_error_flag (uint8) characteristic
+  bletcmds_last_cmd_error_flag = BLECharacteristic(UUID128_CHR_TCMDS_LAST_CMD_ERROR_FLAG);
+  bletcmds_last_cmd_error_flag.setProperties(CHR_PROPS_NOTIFY);
+  bletcmds_last_cmd_error_flag.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_last_cmd_error_flag.setFixedLen(1); 
+  bletcmds_last_cmd_error_flag.begin();
+  bletcmds_last_cmd_error_flag.notify8(0);
+
+  // TCMDS:error_msg (utf8s) characteristic
+  bletcmds_error_msg = BLECharacteristic(UUID128_CHR_TCMDS_ERROR_MSG);
+  bletcmds_error_msg.setProperties(CHR_PROPS_NOTIFY);
+  bletcmds_error_msg.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_error_msg.setMaxLen(20); 
+  bletcmds_error_msg.begin();
 
   // set up BLE advertising
   Bluefruit.Advertising.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
@@ -380,6 +519,19 @@ void RocketelFS::updateBLETDS() {
       Serial.print(F("ERROR: Invalid mode in updateBLETDS(): "));
       Serial.println(_mode);
   }
+}
+
+// check TCMDS:goto_mode_read
+bool RocketelFS::readBLECmdGotoRead()
+{
+  return bletcmds_goto_mode_read.read8();
+}
+
+
+// check TCMDS:goto_mode_read
+bool RocketelFS::readBLECmdGotoWrite()
+{
+  return bletcmds_goto_mode_write.read8();
 }
 
 // Callback invoked when a BLE connection is made

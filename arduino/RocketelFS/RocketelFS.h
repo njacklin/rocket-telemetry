@@ -159,6 +159,8 @@ const uint8_t UUID128_CHR_TCMDS_ERROR_MSG[16] = {
     0xb7, 0x6e, 0xec, 0xdf, 0x85, 0x65, 0x29, 0x82,
     0x61, 0x4d, 0xbc, 0x49, 0x02, 0x0e, 0x97, 0xe0  };
 
+// TODO rewrite UUIDs to save memory
+
 // I2C addresses
 #define RFS_I2C_ADDR_BMP280 (0x77)
 
@@ -231,7 +233,8 @@ class RocketelFS
     BLECharacteristic bletcfgs_altitude_algorithm_str;
     BLECharacteristic bletcfgs_altitude_ref_str;
     BLECharacteristic bletcfgs_pressure_offset_pa;
-    BLECharacteristic bletcfgs_altitude_units_str;
+    BLECharacteristic bletcfgs_altitude_offset_m;
+    BLECharacteristic bletcfgs_altitude_str_units;
     BLECharacteristic bletcfgs_last_log_index;
 
     // custom telemetry command service
@@ -242,7 +245,7 @@ class RocketelFS
     BLECharacteristic bletcmds_delete_log;
     BLECharacteristic bletcmds_transfer_log_uart;
     BLECharacteristic bletcmds_erase_all;
-    BLECharacteristic bletcmds_read_log_index;
+    BLECharacteristic bletcmds_log_index;
     BLECharacteristic bletcmds_ready;
     BLECharacteristic bletcmds_last_cmd_error_flag;
     BLECharacteristic bletcmds_error_msg;
@@ -254,6 +257,12 @@ class RocketelFS
 
     // BLE methods
     void updateBLETDS();
+    void updateBLETCFGS(); // TODO 
+    void updateBLETCMDS(); // TODO
+
+    bool readBLECmdGotoRead();
+    bool readBLECmdGotoWrite();
+    
 
     int updateBLEBatteryLevel(bool newMeasurement);
     // might want to make low level functions like this private eventually
