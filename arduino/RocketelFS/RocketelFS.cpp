@@ -177,7 +177,7 @@ bool RocketelFS::begin()
   // TCFGS:altitude_algorithm_str (utf8s) characteristic
   bletcfgs_altitude_algorithm_str = BLECharacteristic(UUID128_CHR_TCFGS_ALTITUDE_ALGORITHM_STR);
   bletcfgs_altitude_algorithm_str.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcfgs_altitude_algorithm_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcfgs_altitude_algorithm_str.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   bletcfgs_altitude_algorithm_str.setFixedLen(2); // {'1A','1B','2A','2B'} 
   bletcfgs_altitude_algorithm_str.begin();
 
@@ -192,21 +192,21 @@ bool RocketelFS::begin()
   // TCFGS:pressure_offset_pa (float) characteristic
   bletcfgs_pressure_offset_pa = BLECharacteristic(UUID128_CHR_TCFGS_PRESSURE_OFFSET_PA);
   bletcfgs_pressure_offset_pa.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcfgs_pressure_offset_pa.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcfgs_pressure_offset_pa.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   bletcfgs_pressure_offset_pa.setFixedLen(4);  
   bletcfgs_pressure_offset_pa.begin();
 
   // TCFGS:altitude_offset_m (float) characteristic
   bletcfgs_altitude_offset_m = BLECharacteristic(UUID128_CHR_TCFGS_ALTITUDE_OFFSET_M);
   bletcfgs_altitude_offset_m.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcfgs_altitude_offset_m.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcfgs_altitude_offset_m.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   bletcfgs_altitude_offset_m.setFixedLen(4);  
   bletcfgs_altitude_offset_m.begin();
 
   // TCFGS:altitude_str_units (utf8s) characteristic
   bletcfgs_altitude_str_units = BLECharacteristic(UUID128_CHR_TCFGS_ALTITUDE_REF_STR);
   bletcfgs_altitude_str_units.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcfgs_altitude_str_units.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcfgs_altitude_str_units.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   bletcfgs_altitude_str_units.setMaxLen(2); // {'m','ft'} 
   bletcfgs_altitude_str_units.begin();
 
@@ -236,7 +236,7 @@ bool RocketelFS::begin()
   // TCMDS:goto_mode_read (uint8) characteristic
   bletcmds_goto_mode_read = BLECharacteristic(UUID128_CHR_TCMDS_GOTO_MODE_READ);
   bletcmds_goto_mode_read.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcmds_goto_mode_read.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_goto_mode_read.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   bletcmds_goto_mode_read.setFixedLen(1); 
   bletcmds_goto_mode_read.begin();
   bletcmds_goto_mode_read.write8(0);
@@ -244,7 +244,7 @@ bool RocketelFS::begin()
   // TCMDS:goto_mode_write (uint8) characteristic
   bletcmds_goto_mode_write = BLECharacteristic(UUID128_CHR_TCMDS_GOTO_MODE_WRITE);
   bletcmds_goto_mode_write.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcmds_goto_mode_write.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_goto_mode_write.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   bletcmds_goto_mode_write.setFixedLen(1); 
   bletcmds_goto_mode_write.begin();
   bletcmds_goto_mode_write.write8(0);
@@ -252,7 +252,7 @@ bool RocketelFS::begin()
   // TCMDS:open_log (uint8) characteristic
   bletcmds_open_log = BLECharacteristic(UUID128_CHR_TCMDS_OPEN_LOG);
   bletcmds_open_log.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcmds_open_log.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_open_log.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   bletcmds_open_log.setFixedLen(1); 
   bletcmds_open_log.begin();
   bletcmds_open_log.write8(0);
@@ -260,7 +260,7 @@ bool RocketelFS::begin()
   // TCMDS:delete_log (uint8) characteristic
   bletcmds_delete_log = BLECharacteristic(UUID128_CHR_TCMDS_DELETE_LOG);
   bletcmds_delete_log.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcmds_delete_log.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_delete_log.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   bletcmds_delete_log.setFixedLen(1); 
   bletcmds_delete_log.begin();
   bletcmds_delete_log.write8(0);
@@ -268,7 +268,7 @@ bool RocketelFS::begin()
   // TCMDS:transfer_log_uart (uint8) characteristic
   bletcmds_transfer_log_uart = BLECharacteristic(UUID128_CHR_TCMDS_TRANSFER_LOG_UART);
   bletcmds_transfer_log_uart.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcmds_transfer_log_uart.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_transfer_log_uart.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   bletcmds_transfer_log_uart.setFixedLen(1); 
   bletcmds_transfer_log_uart.begin();
   bletcmds_transfer_log_uart.write8(0);
@@ -276,7 +276,7 @@ bool RocketelFS::begin()
   // TCMDS:erase_all (uint8) characteristic
   bletcmds_erase_all = BLECharacteristic(UUID128_CHR_TCMDS_ERASE_ALL);
   bletcmds_erase_all.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcmds_erase_all.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_erase_all.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   bletcmds_erase_all.setFixedLen(1); 
   bletcmds_erase_all.begin();
   bletcmds_erase_all.write8(0);
@@ -284,14 +284,14 @@ bool RocketelFS::begin()
   // TCMDS:log_index (uint8) characteristic
   bletcmds_log_index = BLECharacteristic(UUID128_CHR_TCMDS_LOG_INDEX);
   bletcmds_log_index.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcmds_log_index.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletcmds_log_index.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   bletcmds_log_index.setFixedLen(1); 
   bletcmds_log_index.begin();
   bletcmds_log_index.write8(0);
 
   // TCMDS:ready (uint8) characteristic
   bletcmds_ready = BLECharacteristic(UUID128_CHR_TCMDS_READY);
-  bletcmds_ready.setProperties(CHR_PROPS_NOTIFY);
+  bletcmds_ready.setProperties(CHR_PROPS_READ | CHR_PROPS_NOTIFY);
   bletcmds_ready.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletcmds_ready.setFixedLen(1); 
   bletcmds_ready.begin();
