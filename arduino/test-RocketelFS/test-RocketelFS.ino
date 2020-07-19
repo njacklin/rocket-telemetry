@@ -1,9 +1,6 @@
 // Neil Jacklin
 // Test RocketelFS 
 
-// #defines
-#define RFS_DEBUG 
-
 // includes
 #include <RocketelFS.h>
 
@@ -21,6 +18,7 @@ void setup() {
 
   // init sensor
   R::init();
+  R::debug = true;
 
   Serial.print(F("LOG: RocketTel object was "));
   if ( !R::initialized() ) Serial.print(F("NOT "));
@@ -44,11 +42,11 @@ void loop() {
 
   R::updateBLEBatteryLevel(false);
 
-//  // practice new method calls
-//  R.readPressureTempSensor();
-//
-//  R.updateBLETDS();
-//
+  // practice new method calls
+  R::readPressureTempSensor();
+
+  R::updateBLETDS();
+
 //  if ( loopCount == 10 ) {
 //    R.setMaxAltitudeM(359.5f);
 //    Serial.print("DEBUG: Set max altitude = ");

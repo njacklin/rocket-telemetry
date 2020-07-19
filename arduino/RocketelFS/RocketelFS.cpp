@@ -418,9 +418,8 @@ bool RocketelFS::changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt) {
   // recompute altitude
   computeAltitude();
 
-  #ifdef RFS_DEBUG
-  Serial.println(F("DEBUG: exiting changeAltitudeAlgorithm() successfully."));
-  #endif 
+  if (debug)
+    Serial.println(F("DEBUG: exiting changeAltitudeAlgorithm() successfully.")); 
 
   return true;
 }
@@ -428,17 +427,17 @@ bool RocketelFS::changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt) {
 // read and return battery level
 // based on https://learn.adafruit.com/adafruit-feather-sense/nrf52-adc
 int RocketelFS::readBattery() {
-  #ifdef RFS_DEBUG
-  Serial.print(F("DEBUG: analogRead(PIN_BATTERYADC) = "));
-  Serial.println(analogRead(PIN_BATTERYADC));
-  #endif 
+  if (debug) {
+    Serial.print(F("DEBUG: analogRead(PIN_BATTERYADC) = "));
+    Serial.println(analogRead(PIN_BATTERYADC));
+  }
 
   _batteryVoltage = _batteryADCvoltPerLsb * (float)analogRead(PIN_BATTERYADC);
 
-  #ifdef RFS_DEBUG
-  Serial.print("DEBUG: battery voltage (V) = ");
-  Serial.println(_batteryVoltage);
-  #endif
+  if (debug) {
+    Serial.print("DEBUG: battery voltage (V) = ");
+    Serial.println(_batteryVoltage);
+  }
 
   if ( _batteryVoltage < 3.3f ) {
     _batteryLevel = 0;
@@ -450,10 +449,10 @@ int RocketelFS::readBattery() {
 
   _batteryLevel = constrain(_batteryLevel,0,100);
 
-  #ifdef RFS_DEBUG
-  Serial.print("DEBUG: battery level (%) = ");
-  Serial.println(_batteryLevel);
-  #endif 
+  if (debug) {
+    Serial.print("DEBUG: battery level (%) = ");
+    Serial.println(_batteryLevel);
+  }
 
   return _batteryLevel;
 }
@@ -481,7 +480,7 @@ void RocketelFS::updateBLETDS() {
   // TODO: move to mode WRITE only?  but it's useful...
   bletds_timestamp_ms.notify(&timestampMs_uint32,4);
   sprintf(_bleTimestampMsStr,"Time(ms):%d",timestampMs_uint32);
-  bletds_timestamp_ms_str.notify(_bleTimestampMsStr);
+  bletds_timestamp_ms_str.write(_bleTimestampMsStr);
 
   // pressure characteristics
   // TODO: move to mode WRITE only?  but it's useful...
@@ -543,30 +542,30 @@ void RocketelFS::bletcfgsWriteCallback(uint16_t conn_hdl, BLECharacteristic* bch
 
   if ( bchr == &bletcfgs_altitude_algorithm_str ) {
     strncpy(_altitudeAlgorithm, (char*) data, (len < 3) ? len : 3 );
-    #ifdef RFS_DEBUG
-    Serial.print(F("DEBUG: bletcfgsWriteCallback altitude algorithm updated to "));
-    Serial.println(_altitudeAlgorithm);
-    #endif 
+    if (debug) {
+      Serial.print(F("DEBUG: bletcfgsWriteCallback altitude algorithm updated to "));
+      Serial.println(_altitudeAlgorithm);
+    }
   } else if ( bchr == &bletcfgs_pressure_offset_pa ) {
     memcpy(&fval, data, (len < 4) ? len : 4 );
     _pressureOffsetPa = fval;
-    #ifdef RFS_DEBUG
-    Serial.print(F("DEBUG: bletcfgsWriteCallback pressure offset pa updated to "));
-    Serial.println(_pressureOffsetPa);
-    #endif 
+    if (debug) {
+      Serial.print(F("DEBUG: bletcfgsWriteCallback pressure offset pa updated to "));
+      Serial.println(_pressureOffsetPa);
+    }
   } else if ( bchr == &bletcfgs_altitude_offset_m ) {
     memcpy(&fval, data, (len < 4) ? len : 4 );
     _altitudeOffsetM = fval;
-    #ifdef RFS_DEBUG
-    Serial.print(F("DEBUG: bletcfgsWriteCallback altitude offset pa updated to "));
-    Serial.println(_altitudeOffsetM);
-    #endif 
+    if (debug) {
+      Serial.print(F("DEBUG: bletcfgsWriteCallback altitude offset pa updated to "));
+      Serial.println(_altitudeOffsetM);
+    }
   } else if ( bchr == &bletcfgs_altitude_str_units ) {
     strncpy(_altitudeStrUnits, (char*) data, (len < 2) ? len : 2 );
-    #ifdef RFS_DEBUG
-    Serial.print(F("DEBUG: bletcfgsWriteCallback altitude str units updated to "));
-    Serial.println(_altitudeStrUnits);
-    #endif 
+    if (debug) {
+      Serial.print(F("DEBUG: bletcfgsWriteCallback altitude str units updated to "));
+      Serial.println(_altitudeStrUnits);
+    }
   }   
 
 }
@@ -593,10 +592,10 @@ void RocketelFS::bleConnectCallback(uint16_t conn_handle)
   char central_name[32] = { 0 };
   connection->getPeerName(central_name, sizeof(central_name));
 
-  #ifdef RFS_DEBUG
-  Serial.print(F("DEBUG: BLE Connected to "));
-  Serial.println(central_name);
-  #endif
+  if (debug) {
+    Serial.print(F("DEBUG: BLE Connected to "));
+    Serial.println(central_name);
+  }
 }
 
 // Callback invoked when a BLE connection is dropped
@@ -606,10 +605,10 @@ void RocketelFS::bleDisconnectCallback(uint16_t conn_handle, uint8_t reason)
 {
   // (void) conn_handle;
   // (void) reason;
-  #ifdef RFS_DEBUG
-  Serial.print(F("DEBUG: BLE Disconnected, reason = 0x"));
-  Serial.println(reason, HEX);
-  #endif 
+  if (debug) {
+    Serial.print(F("DEBUG: BLE Disconnected, reason = 0x"));
+    Serial.println(reason, HEX);
+  }
 }
 
 
@@ -785,10 +784,10 @@ bool RocketelFS::openLogForRead(int logIndex)
   _filename[3] = '0' + (logIndex / 10);
   _filename[4] = '0' + (logIndex % 10);
 
-  #ifdef RFS_DEBUG
-  Serial.print(F("DEBUG: Opening file for reading: "));
-  Serial.println(_filename);
-  #endif 
+  if (debug) {
+    Serial.print(F("DEBUG: Opening file for reading: "));
+    Serial.println(_filename);
+  }
 
   // open file
   if ( fatfs.open(_filename, FILE_READ) ) {
@@ -819,10 +818,10 @@ float RocketelFS::computeAltitude()
   // error checking
   if ( strcmp(_altitudeAlgorithm,"1A") == 0 && _altitudeOffsetM != 0.0f ) {
     Serial.println(F("WARNING: altitude offset not set right for algorithm 1A"));
-    #ifdef RFS_DEBUG
-    Serial.print(F("DEBUG: _altitudeOffsetM = ")); 
-    Serial.println(_altitudeOffsetM);
-    #endif 
+    if (debug) {
+      Serial.print(F("DEBUG: _altitudeOffsetM = ")); 
+      Serial.println(_altitudeOffsetM);
+    }
   }
   
   if ( strcmp(_altitudeAlgorithm,"1B") == 0 && _pressureOffsetPa != 101325.0f ) { 
@@ -840,6 +839,16 @@ float RocketelFS::computeAltitude()
   
   // return altitude
   return _altitudeM;
+}
+
+// debug/test functions
+
+float RocketelFS::setMaxAltitudeM(float valueM) 
+{ 
+  if (!debug)
+    Serial.println(F("WARNING: setMaxAltitudeM() should only be called when debug enabled."));
+  
+  return _maxAltitudeM = valueM; 
 }
 
 

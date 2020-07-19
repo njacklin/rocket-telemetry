@@ -182,6 +182,9 @@ class RocketelFS
     // Constructor
     RocketelFS();
 
+    // debug flag (print DEBUG messages if true)
+    static inline bool debug = false;
+
     // public methods
     static bool init();
     static bool initialized() {return _bInit;}
@@ -278,9 +281,7 @@ class RocketelFS
     static float convertDegCtoF(float degC) { return degC * 1.8f + 32.0f; }
 
     // debug/test functions
-    #ifdef RFS_DEBUG
-    static float setMaxAltitudeM(float valueM) { return _maxAltitudeM = valueM; }
-    #endif
+    static float setMaxAltitudeM(float valueM);
 
   private:
 
