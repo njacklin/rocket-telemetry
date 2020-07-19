@@ -436,17 +436,17 @@ bool RocketelFS::changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt) {
 // read and return battery level
 // based on https://learn.adafruit.com/adafruit-feather-sense/nrf52-adc
 int RocketelFS::readBattery() {
-  if (debug) {
-    Serial.print(F("DEBUG: analogRead(PIN_BATTERYADC) = "));
-    Serial.println(analogRead(PIN_BATTERYADC));
-  }
+  // if (debug) {
+  //   Serial.print(F("DEBUG: analogRead(PIN_BATTERYADC) = "));
+  //   Serial.println(analogRead(PIN_BATTERYADC));
+  // }
 
   _batteryVoltage = _batteryADCvoltPerLsb * (float)analogRead(PIN_BATTERYADC);
 
-  if (debug) {
-    Serial.print("DEBUG: battery voltage (V) = ");
-    Serial.println(_batteryVoltage);
-  }
+  // if (debug) {
+  //   Serial.print("DEBUG: battery voltage (V) = ");
+  //   Serial.println(_batteryVoltage);
+  // }
 
   if ( _batteryVoltage < 3.3f ) {
     _batteryLevel = 0;
@@ -458,10 +458,10 @@ int RocketelFS::readBattery() {
 
   _batteryLevel = constrain(_batteryLevel,0,100);
 
-  if (debug) {
-    Serial.print("DEBUG: battery level (%) = ");
-    Serial.println(_batteryLevel);
-  }
+  // if (debug) {
+  //   Serial.print("DEBUG: battery level (%) = ");
+  //   Serial.println(_batteryLevel);
+  // }
 
   return _batteryLevel;
 }
