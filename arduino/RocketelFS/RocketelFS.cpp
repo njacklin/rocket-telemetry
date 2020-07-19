@@ -32,52 +32,52 @@ bool RocketelFS::init()
     return false;
   }
 
-  // // PIN setup
-  // // set up user switch pin to digital input mode
-  // pinMode(PIN_USERSW,INPUT);
-  // // set up built-in LED for output
-  // pinMode(LED_BUILTIN, OUTPUT);
-  // // setup battery ADC 
-  // // following the lead of https://learn.adafruit.com/adafruit-feather-sense/nrf52-adc
-  // // set the analog reference to 3.0V (default = 3.6V)
-  // analogReference(AR_INTERNAL_3_0);
-  // // set the resolution to 12-bit (0..4095)
-  // analogReadResolution(12); // Can be 8, 10, 12 or 14
-  // delay(100); // delay 100 ms to let ADC settle
-  // // set _batteryADCvoltPerLsb = (voltage_div_comp) * (ADC voltage max / ADC output max)
-  // _batteryADCvoltPerLsb = 2.0f * ( 3.0f / 4096.0f );
-  // readBattery();
+  // PIN setup
+  // set up user switch pin to digital input mode
+  pinMode(PIN_USERSW,INPUT);
+  // set up built-in LED for output
+  pinMode(LED_BUILTIN, OUTPUT);
+  // setup battery ADC 
+  // following the lead of https://learn.adafruit.com/adafruit-feather-sense/nrf52-adc
+  // set the analog reference to 3.0V (default = 3.6V)
+  analogReference(AR_INTERNAL_3_0);
+  // set the resolution to 12-bit (0..4095)
+  analogReadResolution(12); // Can be 8, 10, 12 or 14
+  delay(100); // delay 100 ms to let ADC settle
+  // set _batteryADCvoltPerLsb = (voltage_div_comp) * (ADC voltage max / ADC output max)
+  _batteryADCvoltPerLsb = 2.0f * ( 3.0f / 4096.0f );
+  readBattery();
 
-  // // intitalize flash and mount FAT file system
-  // if (!flash.begin()) {
-  //   Serial.println(F("ERROR: failed to initialize flash chip!"));
-  //   return false;
-  // }
+  // intitalize flash and mount FAT file system
+  if (!flash.begin()) {
+    Serial.println(F("ERROR: failed to initialize flash chip!"));
+    return false;
+  }
 
-  // if (!fatfs.begin(&flash)) {
-  //   Serial.println(F("ERROR: failed to mount filesystem!"));
-  //   Serial.println(F("ERROR: ensure chip formatted with the SdFat_format example"));
-  //   return false;
-  // }
+  if (!fatfs.begin(&flash)) {
+    Serial.println(F("ERROR: failed to mount filesystem!"));
+    Serial.println(F("ERROR: ensure chip formatted with the SdFat_format example"));
+    return false;
+  }
 
-  // // init pressure sensor
-  // if (!bmp.begin(RFS_I2C_ADDR_BMP280)) {
-  //   Serial.println(F("ERROR: Could not find a valid BMP280 sensor, check wiring!"));
-  //   return false;
-  // }
+  // init pressure sensor
+  if (!bmp.begin(RFS_I2C_ADDR_BMP280)) {
+    Serial.println(F("ERROR: Could not find a valid BMP280 sensor, check wiring!"));
+    return false;
+  }
 
-  // bmp.setSampling(
-  //   Adafruit_BMP280::MODE_NORMAL,    /* Operating Mode. Normal reads every standby time. */
-  //   Adafruit_BMP280::SAMPLING_X1,    /* Temp. oversampling */
-  //   Adafruit_BMP280::SAMPLING_X4,    /* Pressure oversampling */
-  //   Adafruit_BMP280::FILTER_X2,      /* IIR Filtering. */
-  //   Adafruit_BMP280::STANDBY_MS_63); /* Standby time.  Should be less than real sampling time. */
+  bmp.setSampling(
+    Adafruit_BMP280::MODE_NORMAL,    /* Operating Mode. Normal reads every standby time. */
+    Adafruit_BMP280::SAMPLING_X1,    /* Temp. oversampling */
+    Adafruit_BMP280::SAMPLING_X4,    /* Pressure oversampling */
+    Adafruit_BMP280::FILTER_X2,      /* IIR Filtering. */
+    Adafruit_BMP280::STANDBY_MS_63); /* Standby time.  Should be less than real sampling time. */
 
-  // // first readings are no good, so burn off a few
-  // bmp.readPressure(); delay(100); bmp.readPressure();
+  // first readings are no good, so burn off a few
+  bmp.readPressure(); delay(100); bmp.readPressure();
 
-  // // set altitude settings for initial altitude algorithm
-  // changeAltitudeAlgorithm(_altitudeAlgorithm);
+  // set altitude settings for initial altitude algorithm
+  changeAltitudeAlgorithm(_altitudeAlgorithm);
 
   // // BLE init
 
