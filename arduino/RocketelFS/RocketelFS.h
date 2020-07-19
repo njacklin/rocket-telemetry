@@ -220,44 +220,44 @@ class RocketelFS
     static inline BLEBas blebas;  // BAS (BAttery Service) helper object
 
     // custom telemetry data service
-    static BLEService bletds;
-    static BLECharacteristic bletds_log_index;
-    static BLECharacteristic bletds_timestamp_ms;
-    static BLECharacteristic bletds_pressure_pa;
-    static BLECharacteristic bletds_altitude_m;
-    static BLECharacteristic bletds_max_altitude_m;
-    static BLECharacteristic bletds_altitude_algorithm;
-    static BLECharacteristic bletds_altitude_ref;
-    static BLECharacteristic bletds_pressure_offset_pa;
-    static BLECharacteristic bletds_altitude_offset_m;
-    static BLECharacteristic bletds_mode_str;
-    static BLECharacteristic bletds_log_index_str;
-    static BLECharacteristic bletds_timestamp_ms_str;
-    static BLECharacteristic bletds_pressure_pa_str;
-    static BLECharacteristic bletds_altitude_str;
-    static BLECharacteristic bletds_max_altitude_str;
+    static inline BLEService bletds;
+    static inline BLECharacteristic bletds_log_index;
+    static inline BLECharacteristic bletds_timestamp_ms;
+    static inline BLECharacteristic bletds_pressure_pa;
+    static inline BLECharacteristic bletds_altitude_m;
+    static inline BLECharacteristic bletds_max_altitude_m;
+    static inline BLECharacteristic bletds_altitude_algorithm;
+    static inline BLECharacteristic bletds_altitude_ref;
+    static inline BLECharacteristic bletds_pressure_offset_pa;
+    static inline BLECharacteristic bletds_altitude_offset_m;
+    static inline BLECharacteristic bletds_mode_str;
+    static inline BLECharacteristic bletds_log_index_str;
+    static inline BLECharacteristic bletds_timestamp_ms_str;
+    static inline BLECharacteristic bletds_pressure_pa_str;
+    static inline BLECharacteristic bletds_altitude_str;
+    static inline BLECharacteristic bletds_max_altitude_str;
 
     // custom telemetry config service
-    static BLEService bletcfgs;
-    static BLECharacteristic bletcfgs_altitude_algorithm_str;
-    static BLECharacteristic bletcfgs_altitude_ref_str;
-    static BLECharacteristic bletcfgs_pressure_offset_pa;
-    static BLECharacteristic bletcfgs_altitude_offset_m;
-    static BLECharacteristic bletcfgs_altitude_str_units;
-    static BLECharacteristic bletcfgs_last_log_index;
+    static inline BLEService bletcfgs;
+    static inline BLECharacteristic bletcfgs_altitude_algorithm_str;
+    static inline BLECharacteristic bletcfgs_altitude_ref_str;
+    static inline BLECharacteristic bletcfgs_pressure_offset_pa;
+    static inline BLECharacteristic bletcfgs_altitude_offset_m;
+    static inline BLECharacteristic bletcfgs_altitude_str_units;
+    static inline BLECharacteristic bletcfgs_last_log_index;
 
     // custom telemetry command service
-    static BLEService bletcmds;
-    static BLECharacteristic bletcmds_goto_mode_read;
-    static BLECharacteristic bletcmds_goto_mode_write;
-    static BLECharacteristic bletcmds_open_log;
-    static BLECharacteristic bletcmds_delete_log;
-    static BLECharacteristic bletcmds_transfer_log_uart;
-    static BLECharacteristic bletcmds_erase_all;
-    static BLECharacteristic bletcmds_log_index;
-    static BLECharacteristic bletcmds_ready;
-    static BLECharacteristic bletcmds_last_cmd_error_flag;
-    static BLECharacteristic bletcmds_error_msg;
+    static inline BLEService bletcmds;
+    static inline BLECharacteristic bletcmds_goto_mode_read;
+    static inline BLECharacteristic bletcmds_goto_mode_write;
+    static inline BLECharacteristic bletcmds_open_log;
+    static inline BLECharacteristic bletcmds_delete_log;
+    static inline BLECharacteristic bletcmds_transfer_log_uart;
+    static inline BLECharacteristic bletcmds_erase_all;
+    static inline BLECharacteristic bletcmds_log_index;
+    static inline BLECharacteristic bletcmds_ready;
+    static inline BLECharacteristic bletcmds_last_cmd_error_flag;
+    static inline BLECharacteristic bletcmds_error_msg;
 
     // BLE callbacks (note: callbacks must be declared static)
     static void bleConnectCallback(uint16_t conn_handle);

@@ -105,91 +105,91 @@ bool RocketelFS::init()
   bledis.setModel(_bleModelStr);
   bledis.begin();
 
-  // // init BLE BAttery Service (BAS)
-  // blebas.begin();
-  // blebas.write(_batteryLevel);
+  // init BLE BAttery Service (BAS)
+  blebas.begin();
+  blebas.write(_batteryLevel);
 
-  // // BLE Telemetry Data Service (TDS)
-  // bletds              = BLEService(UUID128_SVC_TDS);
-  // bletds.begin(); // must call service.begin() before adding any characteristics
+  // BLE Telemetry Data Service (TDS)
+  bletds              = BLEService(UUID128_SVC_TDS);
+  bletds.begin(); // must call service.begin() before adding any characteristics
 
-  // // TDS:log_index (uint8) characteristic
-  // bletds_log_index = BLECharacteristic(UUID128_CHR_TDS_LOG_INDEX);
-  // bletds_log_index.setProperties(CHR_PROPS_READ);
-  // bletds_log_index.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  // bletds_log_index.setFixedLen(1);
-  // bletds_log_index.begin();
+  // TDS:log_index (uint8) characteristic
+  bletds_log_index = BLECharacteristic(UUID128_CHR_TDS_LOG_INDEX);
+  bletds_log_index.setProperties(CHR_PROPS_READ);
+  bletds_log_index.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_log_index.setFixedLen(1);
+  bletds_log_index.begin();
 
-  // // TDS:log_index_str (utf8s) characteristic
-  // bletds_log_index_str = BLECharacteristic(UUID128_CHR_TDS_LOG_INDEX_STR);
-  // bletds_log_index_str.setProperties(CHR_PROPS_READ);
-  // bletds_log_index_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  // bletds_log_index_str.setMaxLen(20); // "Log:##"
-  // bletds_log_index_str.begin();
+  // TDS:log_index_str (utf8s) characteristic
+  bletds_log_index_str = BLECharacteristic(UUID128_CHR_TDS_LOG_INDEX_STR);
+  bletds_log_index_str.setProperties(CHR_PROPS_READ);
+  bletds_log_index_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_log_index_str.setMaxLen(20); // "Log:##"
+  bletds_log_index_str.begin();
 
-  // // TDS:timestamp_ms (uint32) characteristic
-  // bletds_timestamp_ms = BLECharacteristic(UUID128_CHR_TDS_TIMESTAMP_MS);
-  // bletds_timestamp_ms.setProperties(CHR_PROPS_READ | CHR_PROPS_NOTIFY);
-  // bletds_timestamp_ms.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  // bletds_timestamp_ms.setFixedLen(4);
-  // bletds_timestamp_ms.begin();
+  // TDS:timestamp_ms (uint32) characteristic
+  bletds_timestamp_ms = BLECharacteristic(UUID128_CHR_TDS_TIMESTAMP_MS);
+  bletds_timestamp_ms.setProperties(CHR_PROPS_READ | CHR_PROPS_NOTIFY);
+  bletds_timestamp_ms.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_timestamp_ms.setFixedLen(4);
+  bletds_timestamp_ms.begin();
 
-  // // TDS:timestamp_ms_str (utf8s) characteristic
-  // bletds_timestamp_ms_str = BLECharacteristic(UUID128_CHR_TDS_TIMESTAMP_MS_STR);
-  // bletds_timestamp_ms_str.setProperties(CHR_PROPS_READ);
-  // bletds_timestamp_ms_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  // bletds_timestamp_ms_str.setMaxLen(20); // "Time(ms):#####"
-  // bletds_timestamp_ms_str.begin();
+  // TDS:timestamp_ms_str (utf8s) characteristic
+  bletds_timestamp_ms_str = BLECharacteristic(UUID128_CHR_TDS_TIMESTAMP_MS_STR);
+  bletds_timestamp_ms_str.setProperties(CHR_PROPS_READ);
+  bletds_timestamp_ms_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_timestamp_ms_str.setMaxLen(20); // "Time(ms):#####"
+  bletds_timestamp_ms_str.begin();
 
-  // // TDS:pressure_pa (uint32) characteristic
-  // bletds_pressure_pa = BLECharacteristic(UUID128_CHR_TDS_PRESSURE_PA);
-  // bletds_pressure_pa.setProperties(CHR_PROPS_READ);
-  // bletds_pressure_pa.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  // bletds_pressure_pa.setFixedLen(4);
-  // bletds_pressure_pa.begin();
+  // TDS:pressure_pa (uint32) characteristic
+  bletds_pressure_pa = BLECharacteristic(UUID128_CHR_TDS_PRESSURE_PA);
+  bletds_pressure_pa.setProperties(CHR_PROPS_READ);
+  bletds_pressure_pa.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_pressure_pa.setFixedLen(4);
+  bletds_pressure_pa.begin();
 
-  // // TDS:pressure_pa_str (utf8s) characteristic
-  // bletds_pressure_pa_str = BLECharacteristic(UUID128_CHR_TDS_PRESSURE_PA_STR);
-  // bletds_pressure_pa_str.setProperties(CHR_PROPS_READ);
-  // bletds_pressure_pa_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  // bletds_pressure_pa_str.setMaxLen(20); // "P(Pa):######"
-  // bletds_pressure_pa_str.begin();
+  // TDS:pressure_pa_str (utf8s) characteristic
+  bletds_pressure_pa_str = BLECharacteristic(UUID128_CHR_TDS_PRESSURE_PA_STR);
+  bletds_pressure_pa_str.setProperties(CHR_PROPS_READ);
+  bletds_pressure_pa_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_pressure_pa_str.setMaxLen(20); // "P(Pa):######"
+  bletds_pressure_pa_str.begin();
 
-  // // TDS:altitude_m (float) characteristic
-  // bletds_altitude_m = BLECharacteristic(UUID128_CHR_TDS_ALTITUDE_M);
-  // bletds_altitude_m.setProperties(CHR_PROPS_READ);
-  // bletds_altitude_m.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  // bletds_altitude_m.setFixedLen(4);
-  // bletds_altitude_m.begin();
+  // TDS:altitude_m (float) characteristic
+  bletds_altitude_m = BLECharacteristic(UUID128_CHR_TDS_ALTITUDE_M);
+  bletds_altitude_m.setProperties(CHR_PROPS_READ);
+  bletds_altitude_m.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_altitude_m.setFixedLen(4);
+  bletds_altitude_m.begin();
 
-  // // TDS:altitude_str (utf8s) characteristic
-  // bletds_altitude_str = BLECharacteristic(UUID128_CHR_TDS_ALTITUDE_STR);
-  // bletds_altitude_str.setProperties(CHR_PROPS_READ);
-  // bletds_altitude_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  // bletds_altitude_str.setMaxLen(20); // "Alt(units)):######"
-  // bletds_altitude_str.begin();
+  // TDS:altitude_str (utf8s) characteristic
+  bletds_altitude_str = BLECharacteristic(UUID128_CHR_TDS_ALTITUDE_STR);
+  bletds_altitude_str.setProperties(CHR_PROPS_READ);
+  bletds_altitude_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_altitude_str.setMaxLen(20); // "Alt(units)):######"
+  bletds_altitude_str.begin();
 
-  // // TDS:max_altitude_m (float) characteristic
-  // bletds_max_altitude_m = BLECharacteristic(UUID128_CHR_TDS_MAX_ALTITUDE_M);
-  // bletds_max_altitude_m.setProperties(CHR_PROPS_READ|CHR_PROPS_NOTIFY);
-  // bletds_max_altitude_m.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  // bletds_max_altitude_m.setFixedLen(4);
-  // bletds_max_altitude_m.begin();
+  // TDS:max_altitude_m (float) characteristic
+  bletds_max_altitude_m = BLECharacteristic(UUID128_CHR_TDS_MAX_ALTITUDE_M);
+  bletds_max_altitude_m.setProperties(CHR_PROPS_READ|CHR_PROPS_NOTIFY);
+  bletds_max_altitude_m.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_max_altitude_m.setFixedLen(4);
+  bletds_max_altitude_m.begin();
 
-  // // TDS:max_altitude_str (utf8s) characteristic
-  // bletds_max_altitude_str = BLECharacteristic(UUID128_CHR_TDS_MAX_ALTITUDE_STR);
-  // bletds_max_altitude_str.setProperties(CHR_PROPS_READ);
-  // bletds_max_altitude_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  // bletds_max_altitude_str.setMaxLen(20); // "MaxAlt(units)):######"
-  // bletds_max_altitude_str.begin();
+  // TDS:max_altitude_str (utf8s) characteristic
+  bletds_max_altitude_str = BLECharacteristic(UUID128_CHR_TDS_MAX_ALTITUDE_STR);
+  bletds_max_altitude_str.setProperties(CHR_PROPS_READ);
+  bletds_max_altitude_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_max_altitude_str.setMaxLen(20); // "MaxAlt(units)):######"
+  bletds_max_altitude_str.begin();
 
-  // // TDS:mode_str (string) characteristic
-  // bletds_mode_str = BLECharacteristic(UUID128_CHR_TDS_MODE_STR);
-  // bletds_mode_str.setProperties(CHR_PROPS_READ | CHR_PROPS_NOTIFY);
-  // bletds_mode_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
-  // bletds_mode_str.setMaxLen(20); // "MODE:XXXXX"
-  // bletds_mode_str.begin();
-  // // bletds_mode_str.write("MODE:INIT"); // default value
+  // TDS:mode_str (string) characteristic
+  bletds_mode_str = BLECharacteristic(UUID128_CHR_TDS_MODE_STR);
+  bletds_mode_str.setProperties(CHR_PROPS_READ | CHR_PROPS_NOTIFY);
+  bletds_mode_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_mode_str.setMaxLen(20); // "MODE:XXXXX"
+  bletds_mode_str.begin();
+  // bletds_mode_str.write("MODE:INIT"); // default value
 
   // // BLE Telemetry Config Service (TCFGS)
   // bletcfgs = BLEService(UUID128_SVC_TCFGS);
