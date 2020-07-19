@@ -19,6 +19,7 @@ DEBUG = True
 
 #filename = "arduino/feather-express/fe_test3/LOG12.CSV"
 filename = "arduino/feather-express/fe_test3/LOG13.CSV"
+#filename = "arduino/feather-express/fe_test4/LOG14.CSV"
 
 # log annotations/"flight phase" metadata
 
