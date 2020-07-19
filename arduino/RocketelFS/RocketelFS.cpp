@@ -90,20 +90,20 @@ bool RocketelFS::init()
   Bluefruit.Periph.setConnectCallback(bleConnectCallback);
   Bluefruit.Periph.setDisconnectCallback(bleDisconnectCallback);
 
-  // // set Tx power and name
-  // Bluefruit.setTxPower(RFS_BLE_TXPOWER_READ);
-  // Bluefruit.setName(_bleName);
-  // // warning: Don't know if the above two lines need to be in that order.
-  // // I think each one adds something to the advertising data buffer.
-  // // TODO: look into docs/code to verify
+  // set Tx power and name
+  Bluefruit.setTxPower(RFS_BLE_TXPOWER_READ);
+  Bluefruit.setName(_bleName);
+  // warning: Don't know if the above two lines need to be in that order.
+  // I think each one adds something to the advertising data buffer.
+  // TODO: look into docs/code to verify
 
-  // // add BLE services and characteristics
+  // add BLE services and characteristics
 
-  // // init BLE Device Information Service (DIS)
-  // // set some reasonable default values
-  // bledis.setManufacturer(_bleManufacturerStr);
-  // bledis.setModel(_bleModelStr);
-  // bledis.begin();
+  // init BLE Device Information Service (DIS)
+  // set some reasonable default values
+  bledis.setManufacturer(_bleManufacturerStr);
+  bledis.setModel(_bleModelStr);
+  bledis.begin();
 
   // // init BLE BAttery Service (BAS)
   // blebas.begin();

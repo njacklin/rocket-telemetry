@@ -216,8 +216,8 @@ class RocketelFS
     static int getMode() {return _mode;}
 
     // expose BLE services and characteristics
-    static BLEDis bledis; // DIS (Device Information Service) helper object
-    static BLEBas blebas;  // BAS (BAttery Service) helper object
+    static inline BLEDis bledis; // DIS (Device Information Service) helper object
+    static inline BLEBas blebas;  // BAS (BAttery Service) helper object
 
     // custom telemetry data service
     static BLEService bletds;
