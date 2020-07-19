@@ -106,69 +106,83 @@ bool RocketelFS::begin()
   bletds              = BLEService(UUID128_SVC_TDS);
   bletds.begin(); // must call service.begin() before adding any characteristics
 
+  // TDS:log_index (uint8) characteristic
+  bletds_log_index = BLECharacteristic(UUID128_CHR_TDS_LOG_INDEX);
+  bletds_log_index.setProperties(CHR_PROPS_READ);
+  bletds_log_index.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_log_index.setFixedLen(1);
+  bletds_log_index.begin();
+
+  // TDS:log_index_str (utf8s) characteristic
+  bletds_log_index_str = BLECharacteristic(UUID128_CHR_TDS_LOG_INDEX_STR);
+  bletds_log_index_str.setProperties(CHR_PROPS_READ);
+  bletds_log_index_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  bletds_log_index_str.setMaxLen(20); // "Log:##"
+  bletds_log_index_str.begin();
+
   // TDS:timestamp_ms (uint32) characteristic
   bletds_timestamp_ms = BLECharacteristic(UUID128_CHR_TDS_TIMESTAMP_MS);
-  bletds_timestamp_ms.setProperties(CHR_PROPS_NOTIFY);
+  bletds_timestamp_ms.setProperties(CHR_PROPS_READ | CHR_PROPS_NOTIFY);
   bletds_timestamp_ms.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletds_timestamp_ms.setFixedLen(4);
   bletds_timestamp_ms.begin();
 
   // TDS:timestamp_ms_str (utf8s) characteristic
   bletds_timestamp_ms_str = BLECharacteristic(UUID128_CHR_TDS_TIMESTAMP_MS_STR);
-  bletds_timestamp_ms_str.setProperties(CHR_PROPS_NOTIFY);
+  bletds_timestamp_ms_str.setProperties(CHR_PROPS_READ);
   bletds_timestamp_ms_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletds_timestamp_ms_str.setMaxLen(20); // "Time(ms):#####"
   bletds_timestamp_ms_str.begin();
 
   // TDS:pressure_pa (uint32) characteristic
-  bletds_pressure_pa  = BLECharacteristic(UUID128_CHR_TDS_PRESSURE_PA);
-  bletds_pressure_pa.setProperties(CHR_PROPS_NOTIFY);
+  bletds_pressure_pa = BLECharacteristic(UUID128_CHR_TDS_PRESSURE_PA);
+  bletds_pressure_pa.setProperties(CHR_PROPS_READ);
   bletds_pressure_pa.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletds_pressure_pa.setFixedLen(4);
   bletds_pressure_pa.begin();
 
   // TDS:pressure_pa_str (utf8s) characteristic
-  bletds_pressure_pa_str  = BLECharacteristic(UUID128_CHR_TDS_PRESSURE_PA_STR);
-  bletds_pressure_pa_str.setProperties(CHR_PROPS_NOTIFY);
+  bletds_pressure_pa_str = BLECharacteristic(UUID128_CHR_TDS_PRESSURE_PA_STR);
+  bletds_pressure_pa_str.setProperties(CHR_PROPS_READ);
   bletds_pressure_pa_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletds_pressure_pa_str.setMaxLen(20); // "P(Pa):######"
   bletds_pressure_pa_str.begin();
 
   // TDS:altitude_m (float) characteristic
-  bletds_altitude_m  = BLECharacteristic(UUID128_CHR_TDS_ALTITUDE_M);
-  bletds_altitude_m.setProperties(CHR_PROPS_NOTIFY);
+  bletds_altitude_m = BLECharacteristic(UUID128_CHR_TDS_ALTITUDE_M);
+  bletds_altitude_m.setProperties(CHR_PROPS_READ);
   bletds_altitude_m.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletds_altitude_m.setFixedLen(4);
   bletds_altitude_m.begin();
 
   // TDS:altitude_str (utf8s) characteristic
-  bletds_altitude_str  = BLECharacteristic(UUID128_CHR_TDS_ALTITUDE_STR);
-  bletds_altitude_str.setProperties(CHR_PROPS_NOTIFY);
+  bletds_altitude_str = BLECharacteristic(UUID128_CHR_TDS_ALTITUDE_STR);
+  bletds_altitude_str.setProperties(CHR_PROPS_READ);
   bletds_altitude_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletds_altitude_str.setMaxLen(20); // "Alt(units)):######"
   bletds_altitude_str.begin();
 
   // TDS:max_altitude_m (float) characteristic
-  bletds_max_altitude_m  = BLECharacteristic(UUID128_CHR_TDS_MAX_ALTITUDE_M);
-  bletds_max_altitude_m.setProperties(CHR_PROPS_NOTIFY);
+  bletds_max_altitude_m = BLECharacteristic(UUID128_CHR_TDS_MAX_ALTITUDE_M);
+  bletds_max_altitude_m.setProperties(CHR_PROPS_READ|CHR_PROPS_NOTIFY);
   bletds_max_altitude_m.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletds_max_altitude_m.setFixedLen(4);
   bletds_max_altitude_m.begin();
 
   // TDS:max_altitude_str (utf8s) characteristic
-  bletds_max_altitude_str  = BLECharacteristic(UUID128_CHR_TDS_MAX_ALTITUDE_STR);
-  bletds_max_altitude_str.setProperties(CHR_PROPS_NOTIFY);
+  bletds_max_altitude_str = BLECharacteristic(UUID128_CHR_TDS_MAX_ALTITUDE_STR);
+  bletds_max_altitude_str.setProperties(CHR_PROPS_READ);
   bletds_max_altitude_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletds_max_altitude_str.setMaxLen(20); // "MaxAlt(units)):######"
   bletds_max_altitude_str.begin();
 
   // TDS:mode_str (string) characteristic
-  bletds_mode_str  = BLECharacteristic(UUID128_CHR_TDS_MODE_STR);
-  bletds_mode_str.setProperties(CHR_PROPS_READ);
+  bletds_mode_str = BLECharacteristic(UUID128_CHR_TDS_MODE_STR);
+  bletds_mode_str.setProperties(CHR_PROPS_READ | CHR_PROPS_NOTIFY);
   bletds_mode_str.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletds_mode_str.setMaxLen(20); // "MODE:XXXXX"
   bletds_mode_str.begin();
-  // bletds_mode_str.write("INIT"); // default value
+  // bletds_mode_str.write("MODE:INIT"); // default value
 
   // BLE Telemetry Config Service (TCFGS)
   bletcfgs = BLEService(UUID128_SVC_TCFGS);
@@ -178,6 +192,7 @@ bool RocketelFS::begin()
   bletcfgs_altitude_algorithm_str = BLECharacteristic(UUID128_CHR_TCFGS_ALTITUDE_ALGORITHM_STR);
   bletcfgs_altitude_algorithm_str.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
   bletcfgs_altitude_algorithm_str.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcfgs_altitude_algorithm_str.setWriteCallback(bletcfgsWriteCallback);
   bletcfgs_altitude_algorithm_str.setFixedLen(2); // {'1A','1B','2A','2B'} 
   bletcfgs_altitude_algorithm_str.begin();
 
@@ -193,6 +208,7 @@ bool RocketelFS::begin()
   bletcfgs_pressure_offset_pa = BLECharacteristic(UUID128_CHR_TCFGS_PRESSURE_OFFSET_PA);
   bletcfgs_pressure_offset_pa.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
   bletcfgs_pressure_offset_pa.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcfgs_altitude_algorithm_str.setWriteCallback(bletcfgsWriteCallback);
   bletcfgs_pressure_offset_pa.setFixedLen(4);  
   bletcfgs_pressure_offset_pa.begin();
 
@@ -200,6 +216,7 @@ bool RocketelFS::begin()
   bletcfgs_altitude_offset_m = BLECharacteristic(UUID128_CHR_TCFGS_ALTITUDE_OFFSET_M);
   bletcfgs_altitude_offset_m.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
   bletcfgs_altitude_offset_m.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcfgs_altitude_algorithm_str.setWriteCallback(bletcfgsWriteCallback);
   bletcfgs_altitude_offset_m.setFixedLen(4);  
   bletcfgs_altitude_offset_m.begin();
 
@@ -207,6 +224,7 @@ bool RocketelFS::begin()
   bletcfgs_altitude_str_units = BLECharacteristic(UUID128_CHR_TCFGS_ALTITUDE_REF_STR);
   bletcfgs_altitude_str_units.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
   bletcfgs_altitude_str_units.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcfgs_altitude_algorithm_str.setWriteCallback(bletcfgsWriteCallback);
   bletcfgs_altitude_str_units.setMaxLen(2); // {'m','ft'} 
   bletcfgs_altitude_str_units.begin();
 
@@ -216,20 +234,8 @@ bool RocketelFS::begin()
   bletcfgs_altitude_str_units.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletcfgs_altitude_str_units.setFixedLen(1); 
   bletcfgs_altitude_str_units.begin();
-  
-  // BLEService bletcmds;
-  //   BLECharacteristic bletcmds_goto_mode_read;
-  //   BLECharacteristic bletcmds_goto_mode_write;
-  //   BLECharacteristic bletcmds_open_log;
-  //   BLECharacteristic bletcmds_delete_log;
-  //   BLECharacteristic bletcmds_transfer_log_uart;
-  //   BLECharacteristic bletcmds_erase_all;
-  //   BLECharacteristic bletcmds_read_log_index;
-  //   BLECharacteristic bletcmds_ready;
-  //   BLECharacteristic bletcmds_last_cmd_error_flag;
-  //   BLECharacteristic bletcmds_error_msg;
 
-  // BLE Telemetry Command Service (TCFGS)
+  // BLE Telemetry Command Service (TCMDS)
   bletcmds = BLEService(UUID128_SVC_TCMDS);
   bletcmds.begin(); // must call service.begin() before adding any characteristics
 
@@ -295,19 +301,19 @@ bool RocketelFS::begin()
   bletcmds_ready.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletcmds_ready.setFixedLen(1); 
   bletcmds_ready.begin();
-  bletcmds_ready.notify8(0);
+  bletcmds_ready.write8(1);
 
   // TCMDS:last_cmd_error_flag (uint8) characteristic
   bletcmds_last_cmd_error_flag = BLECharacteristic(UUID128_CHR_TCMDS_LAST_CMD_ERROR_FLAG);
-  bletcmds_last_cmd_error_flag.setProperties(CHR_PROPS_NOTIFY);
+  bletcmds_last_cmd_error_flag.setProperties(CHR_PROPS_READ | CHR_PROPS_NOTIFY);
   bletcmds_last_cmd_error_flag.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletcmds_last_cmd_error_flag.setFixedLen(1); 
   bletcmds_last_cmd_error_flag.begin();
-  bletcmds_last_cmd_error_flag.notify8(0);
+  bletcmds_last_cmd_error_flag.write8(0);
 
   // TCMDS:error_msg (utf8s) characteristic
   bletcmds_error_msg = BLECharacteristic(UUID128_CHR_TCMDS_ERROR_MSG);
-  bletcmds_error_msg.setProperties(CHR_PROPS_NOTIFY);
+  bletcmds_error_msg.setProperties(CHR_PROPS_READ);
   bletcmds_error_msg.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletcmds_error_msg.setMaxLen(20); 
   bletcmds_error_msg.begin();
@@ -323,6 +329,7 @@ bool RocketelFS::begin()
   Bluefruit.Advertising.start(0);  // Stop advertising entirely after ADV_TIMEOUT seconds, 0 = never
 
   // set mode to READ
+  // TODO consider calling a private changeMode(toMode) method...
   _mode = RFS_MODE_READ;
   bletds_mode_str.write("READ");
 
@@ -521,14 +528,52 @@ void RocketelFS::updateBLETDS() {
   }
 }
 
-// check TCMDS:goto_mode_read
+// handle writes to BLE TCFGS characteristics
+// only accepts writes when mode == READ
+void RocketelFS::bletcfgsWriteCallback(uint16_t conn_hdl, BLECharacteristic* bchr, uint8_t* data, uint16_t len)
+{
+  float fval;
+
+  if ( _mode != RFS_MODE_READ )
+    return;
+
+  if ( bchr == &bletcfgs_altitude_algorithm_str ) {
+    strncpy(_altitudeAlgorithm, (char*) data, (len < 3) ? len : 3 );
+    #ifdef RFS_DEBUG
+    Serial.print(F("DEBUG: bletcfgsWriteCallback altitude algorithm updated to "));
+    Serial.println(_altitudeAlgorithm);
+    #endif 
+  } else if ( bchr == &bletcfgs_pressure_offset_pa ) {
+    memcpy(&fval, data, (len < 4) ? len : 4 );
+    _pressureOffsetPa = fval;
+    #ifdef RFS_DEBUG
+    Serial.print(F("DEBUG: bletcfgsWriteCallback pressure offset pa updated to "));
+    Serial.println(_pressureOffsetPa);
+    #endif 
+  } else if ( bchr == &bletcfgs_altitude_offset_m ) {
+    memcpy(&fval, data, (len < 4) ? len : 4 );
+    _altitudeOffsetM = fval;
+    #ifdef RFS_DEBUG
+    Serial.print(F("DEBUG: bletcfgsWriteCallback altitude offset pa updated to "));
+    Serial.println(_altitudeOffsetM);
+    #endif 
+  } else if ( bchr == &bletcfgs_altitude_str_units ) {
+    strncpy(_altitudeStrUnits, (char*) data, (len < 2) ? len : 2 );
+    #ifdef RFS_DEBUG
+    Serial.print(F("DEBUG: bletcfgsWriteCallback altitude str units updated to "));
+    Serial.println(_altitudeStrUnits);
+    #endif 
+  }   
+
+}
+
+// check TCMDS:goto_mode_read (DEBUG)
 bool RocketelFS::readBLECmdGotoRead()
 {
   return bletcmds_goto_mode_read.read8();
 }
 
-
-// check TCMDS:goto_mode_read
+// check TCMDS:goto_mode_read (DEBUG)
 bool RocketelFS::readBLECmdGotoWrite()
 {
   return bletcmds_goto_mode_write.read8();

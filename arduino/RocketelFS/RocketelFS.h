@@ -48,6 +48,10 @@
 const uint8_t UUID128_SVC_TDS[16] = {
     0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
     0x74, 0x41, 0xf1, 0x5d, 0x00, 0x00, 0x69, 0x01  };
+// BLE UUID for TDS:log_index                : 01690001-5df1-4174-a537-33891e600690
+const uint8_t UUID128_CHR_TDS_LOG_INDEX[16] = {
+    0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
+    0x74, 0x41, 0xf1, 0x5d, 0x01, 0x00, 0x69, 0x01  };
 // BLE UUID for TDS:timestamp_ms              : 01690002-5df1-4174-a537-33891e600690
 const uint8_t UUID128_CHR_TDS_TIMESTAMP_MS[16] = {
     0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
@@ -64,6 +68,10 @@ const uint8_t UUID128_CHR_TDS_ALTITUDE_M[16] = {
 const uint8_t UUID128_CHR_TDS_MAX_ALTITUDE_M[16] = {
     0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
     0x74, 0x41, 0xf1, 0x5d, 0x04, 0x0F, 0x69, 0x01  };
+// BLE UUID for TDS:log_index_str             : 01691001-5df1-4174-a537-33891e600690
+const uint8_t UUID128_CHR_TDS_LOG_INDEX_STR[16] = {
+    0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
+    0x74, 0x41, 0xf1, 0x5d, 0x01, 0x10, 0x69, 0x01  };
 // BLE UUID for TDS:timestamp_ms_str          : 01691002-5df1-4174-a537-33891e600690
 const uint8_t UUID128_CHR_TDS_TIMESTAMP_MS_STR[16] = {
     0x90, 0x06, 0x60, 0x1e, 0x89, 0x33, 0x37, 0xa5,
@@ -213,20 +221,21 @@ class RocketelFS
 
     // custom telemetry data service
     BLEService bletds;
-    BLECharacteristic bletds_log_index_str;
+    BLECharacteristic bletds_log_index;
     BLECharacteristic bletds_timestamp_ms;
     BLECharacteristic bletds_pressure_pa;
     BLECharacteristic bletds_altitude_m;
     BLECharacteristic bletds_max_altitude_m;
-    BLECharacteristic bletds_timestamp_ms_str;
-    BLECharacteristic bletds_pressure_pa_str;
-    BLECharacteristic bletds_altitude_str;
-    BLECharacteristic bletds_max_altitude_str;
     BLECharacteristic bletds_altitude_algorithm;
     BLECharacteristic bletds_altitude_ref;
     BLECharacteristic bletds_pressure_offset_pa;
     BLECharacteristic bletds_altitude_offset_m;
     BLECharacteristic bletds_mode_str;
+    BLECharacteristic bletds_log_index_str;
+    BLECharacteristic bletds_timestamp_ms_str;
+    BLECharacteristic bletds_pressure_pa_str;
+    BLECharacteristic bletds_altitude_str;
+    BLECharacteristic bletds_max_altitude_str;
 
     // custom telemetry config service
     BLEService bletcfgs;
@@ -250,20 +259,18 @@ class RocketelFS
     BLECharacteristic bletcmds_last_cmd_error_flag;
     BLECharacteristic bletcmds_error_msg;
 
-    // BLE callbacks
+    // BLE callbacks (note: callbacks must be declared static)
     static void bleConnectCallback(uint16_t conn_handle);
     static void bleDisconnectCallback(uint16_t conn_handle, uint8_t reason);
-    // note: callbacks must be declared static
+    static void bletcfgsWriteCallback(uint16_t conn_hdl, BLECharacteristic* bchr, uint8_t* data, uint16_t len);
 
     // BLE methods
     void updateBLETDS();
     void updateBLETCFGS(); // TODO 
     void updateBLETCMDS(); // TODO
-
-    bool readBLECmdGotoRead();
-    bool readBLECmdGotoWrite();
+    bool readBLECmdGotoRead(); // DEBUG
+    bool readBLECmdGotoWrite(); // DEBUG
     
-
     int updateBLEBatteryLevel(bool newMeasurement);
     // might want to make low level functions like this private eventually
 
