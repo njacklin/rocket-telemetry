@@ -34,16 +34,16 @@ void loop() {
 
   Serial.println("Looping...");
 
-//  // battery stuff
-//  R.readBattery();
-//  Serial.print("Battery reading: ");
-//  Serial.print(R.getLastBatteryVoltage());
-//  Serial.print(" V, Level (0-100): ");
-//  Serial.print(R.getLastBatteryLevel());
-//  Serial.println();
-//
-//  R.updateBLEBatteryLevel(false);
-//
+  // battery stuff
+  R::readBattery();
+  Serial.print("Battery reading: ");
+  Serial.print(R::getLastBatteryVoltage());
+  Serial.print(" V, Level (0-100): ");
+  Serial.print(R::getLastBatteryLevel());
+  Serial.println();
+
+  R::updateBLEBatteryLevel(false);
+
 //  // practice new method calls
 //  R.readPressureTempSensor();
 //
