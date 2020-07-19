@@ -338,7 +338,7 @@ bool RocketelFS::init()
   // set mode to READ
   // TODO consider calling a private changeMode(toMode) method...
   _mode = RFS_MODE_READ;
-  bletds_mode_str.write("READ");
+  bletds_mode_str.write("MODE:READ");
 
   // set initilized flag and exit
   return _bInit = true;
