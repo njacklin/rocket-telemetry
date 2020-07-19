@@ -113,7 +113,7 @@ const uint8_t UUID128_CHR_TCFGS_PRESSURE_OFFSET_PA[16] = {
 const uint8_t UUID128_CHR_TCFGS_ALTITUDE_OFFSET_M[16] = {
     0x08, 0xb9, 0x9d, 0xeb, 0x9b, 0x5b, 0xd6, 0x8b,
     0x42, 0x49, 0xf4, 0xa8, 0x12, 0x00, 0x14, 0x03  };
-// BLE UUID for TCFGS:altitude_str_units      : 03140F001-a8f4-4942-8bd6-5b9beb9db908
+// BLE UUID for TCFGS:altitude_str_units      : 0314F001-a8f4-4942-8bd6-5b9beb9db908
 const uint8_t UUID128_CHR_TCFGS_ALTITUDE_STR_UNITS[16] = {
     0x08, 0xb9, 0x9d, 0xeb, 0x9b, 0x5b, 0xd6, 0x8b,
     0x42, 0x49, 0xf4, 0xa8, 0x01, 0xF0, 0x14, 0x03  };
@@ -297,9 +297,9 @@ class RocketelFS
     static inline long _lastFlashFlushms;
     static inline uint32_t _numRecordsWritten = 0;
 
-    static inline int16_t _lastLogIndex = -1;
-    static inline int16_t _currentLogIndex = -1;
-    static inline int16_t _recordFormat = RFS_RECORD_FORMAT;
+    static inline int8_t _lastLogIndex = -1;
+    static inline int8_t _currentLogIndex = -1;
+    static inline int8_t _recordFormat = RFS_RECORD_FORMAT;
     static inline float _lastMaxAltitudeM = 0.0f;
     static inline char _lastAltitudeRef[4] = "---";
     static inline char _lastAltitudeAlgorithm[3] = "--";
