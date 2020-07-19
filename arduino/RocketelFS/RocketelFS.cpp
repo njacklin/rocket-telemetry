@@ -79,16 +79,16 @@ bool RocketelFS::init()
   // set altitude settings for initial altitude algorithm
   changeAltitudeAlgorithm(_altitudeAlgorithm);
 
-  // // BLE init
+  // BLE init
 
-  // // init Bluefruit
-  // if (!Bluefruit.begin()) {
-  //   Serial.println(F("ERROR: Could not begin() Bluefruit library."));
-  // }
+  // init Bluefruit
+  if (!Bluefruit.begin()) {
+    Serial.println(F("ERROR: Could not begin() Bluefruit library."));
+  }
 
-  // // set connect and disconnect callbacks
-  // Bluefruit.Periph.setConnectCallback(bleConnectCallback);
-  // Bluefruit.Periph.setDisconnectCallback(bleDisconnectCallback);
+  // set connect and disconnect callbacks
+  Bluefruit.Periph.setConnectCallback(bleConnectCallback);
+  Bluefruit.Periph.setDisconnectCallback(bleDisconnectCallback);
 
   // // set Tx power and name
   // Bluefruit.setTxPower(RFS_BLE_TXPOWER_READ);
