@@ -7,79 +7,53 @@
 // includes
 #include <RocketelFS.h>
 
-// rocket telemetry object
-RocketelFS R;
+using R = RocketelFS; 
+// Note: RocketelFS should be used as a static class--do not instantiate object
 
-void setup() {
+void setup() { // SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP 
 
-  // setup serial
+  //// setup serial
   Serial.begin(115200);
   
   // try a few times to get Serial going, but move on if we can't get it
   for (int trySerial = 6; !Serial && trySerial > 0; trySerial--)
     delay(500);
 
-  // init sensor
-  R.begin();
+  //// initialize sensor
+  R::debug = true;
+  R::init();
 
-  Serial.print(F("LOG: RocketTel object was "));
+  Serial.print(F("RocketTel object was "));
   if ( !R.initialized() ) Serial.print(F("NOT "));
   Serial.println(F("intialized successfully."));
 
 }
 
-int loopCount = 0;
-  
-void loop() {
+// Main Loop
+// The loop logic should implement the timer-based functionality.  
+// Command handling is taken care of by the BLE write callback functions.
+void loop() { // LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP
 
-  Serial.println("Looping...");
+  // switch based on mode
+  switch ( R::getMode() )
+  {
+    case RFS_MODE_READ: // READ READ READ READ READ READ READ READ READ READ
 
-  // battery stuff
-  R.readBattery();
-  Serial.print("Battery reading: ");
-  Serial.print(R.getLastBatteryVoltage());
-  Serial.print(" V, Level (0-100): ");
-  Serial.print(R.getLastBatteryLevel());
-  Serial.println();
+      break;
 
-  R.updateBLEBatteryLevel(false);
+    case RFS_MODE_WRITE: // WRITE WRITE WRITE WRITE WRITE WRITE WRITE WRITE
 
-  // practice new method calls
-  R.readPressureTempSensor();
+      break;
 
-  R.updateBLETDS();
+    case RFS_MODE_INIT:
+      // try to re-init
+      R::init();
+      
+      break;
 
-  if ( loopCount == 10 ) {
-    R.setMaxAltitudeM(359.5f);
-    Serial.print("DEBUG: Set max altitude = ");
-    Serial.print(R.getMaxAltitudeM());
-    Serial.println();
+    default:
+      Serial.print(F("ERROR: Unrecognized mode: "));
+      Serial.print(R::getMode());
+      
   }
-
-  if ( loopCount == 11 ) {
-    Serial.println("DEBUG: opening new log");
-    R.openNewLog();
-    
-    Serial.print("DEBUG: R.currentLogIndex() = ");
-    Serial.println(R.getCurrentLogIndex());
-  }
-
-  if ( loopCount >= 12 && loopCount <= 25 ) {
-    Serial.println("DEBUG: writing record");
-    R.writeFlashRecord();
-  }
-
-  if ( loopCount == 30 ) {
-    Serial.println("DEBUG: flush flash writes");
-    R.flushFlashWrites();
-  }
-  
-  if ( loopCount == 32 ) {
-    Serial.println("DEBUG: open file for reading");
-    R.openLogForRead(7);
-  }
-    
-  Serial.println();
-  loopCount++;
-  delay(500);
 }

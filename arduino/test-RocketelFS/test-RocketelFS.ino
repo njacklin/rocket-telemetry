@@ -17,8 +17,8 @@ void setup() {
     delay(500);
 
   // init sensor
-  R::init();
   R::debug = true;
+  R::init();
 
   Serial.print(F("LOG: RocketTel object was "));
   if ( !R::initialized() ) Serial.print(F("NOT "));
