@@ -17,6 +17,7 @@
 #include <Adafruit_SPIFlash.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
+#include <Adafruit_LSM6DS33.h>
 #include <bluefruit.h>
 
 // constants ------------------------------------------------------------------
@@ -215,6 +216,13 @@ class RocketelFS
 
     static bool changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt = true);
 
+    // acceleration+gyrometer sensor methods
+    static void readAccelGyroSensor();
+    static float getLastAccelXMps2() {return _accelXMps2;}
+    static float getLastAccelYMps2() {return _accelYMps2;}
+    static float getLastAccelZMps2() {return _accelZMps2;}
+    static float getMaxAccelG() {return _maxAccelG;}
+
     // mode functions
     static int getMode() {return _mode;}
 
@@ -337,7 +345,21 @@ class RocketelFS
     static inline unsigned long _lastPressureTempSensorReadingTimeMs = 0L; 
 
     // accelerometer, magnetometer data
-    // TODO: add
+    static inline float _accelXMps2 = 0.0f;
+    static inline float _accelYMps2 = 0.0f;
+    static inline float _accelZMps2 = 0.0f;
+    static inline float _accelXoffsetMps2 = 0.0f;
+    static inline float _accelYoffsetMps2 = 0.0f;
+    static inline float _accelZoffsetMps2 = 0.0f;
+    static inline float _maxAccelG = 0.0f;
+    static inline float _gyroXRadpS = 0.0f;
+    static inline float _gyroYRadpS = 0.0f;
+    static inline float _gyroZRadpS = 0.0f;
+    static inline float _gyroXOffsetRadpS = 0.0f;
+    static inline float _gyroYOffsetRadpS = 0.0f;
+    static inline float _gyroZOffsetRadpS = 0.0f;
+
+    static inline unsigned long _lastAccelGyroSensorReadingTimeMs = 0L; 
 
     // last sensor reading; should be updated whenever _any_ sensor is read
     static inline unsigned long _lastSensorReadingTimeMs = 0L;

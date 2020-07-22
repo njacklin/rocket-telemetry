@@ -15,6 +15,8 @@ FatFileSystem fatfs;
 
 Adafruit_BMP280 bmp; // I2C (with no arguments)
 
+Adafruit_LSM6DS33 lsm6ds33;
+
 // Constructor ----------------------------------------------------------------
 RocketelFS::RocketelFS()
 {
@@ -62,7 +64,7 @@ bool RocketelFS::init()
 
   // init pressure sensor
   if (!bmp.begin(RFS_I2C_ADDR_BMP280)) {
-    Serial.println(F("ERROR: Could not find a valid BMP280 sensor, check wiring!"));
+    Serial.println(F("ERROR: Could not find a valid BMP280 sensor!"));
     return false;
   }
 
@@ -78,6 +80,46 @@ bool RocketelFS::init()
 
   // set altitude settings for initial altitude algorithm
   changeAltitudeAlgorithm(_altitudeAlgorithm);
+
+  // initialize acceleration and gyromter sensor
+  if (!lsm6ds33.begin_I2C()) {
+    Serial.println(F("ERROR: Could not find a valid LSM6DS33 sensor!"));
+    return false;
+  }
+
+  // LSM6DS_ACCEL_RANGE_2_G
+  // LSM6DS_ACCEL_RANGE_4_G
+  // LSM6DS_ACCEL_RANGE_8_G
+  // LSM6DS_ACCEL_RANGE_16_G
+  lsm6ds33.setAccelRange(LSM6DS_ACCEL_RANGE_16_G);
+
+  // LSM6DS_GYRO_RANGE_125_DPS
+  // LSM6DS_GYRO_RANGE_250_DPS
+  // LSM6DS_GYRO_RANGE_500_DPS
+  // LSM6DS_GYRO_RANGE_1000_DPS
+  // LSM6DS_GYRO_RANGE_2000_DPS
+  lsm6ds33.setGyroRange(LSM6DS_GYRO_RANGE_2000_DPS);
+
+  // rate settings
+  // LSM6DS_RATE_SHUTDOWN // Shutdown
+  // LSM6DS_RATE_12_5_HZ // 12.5 Hz (80 ms period)
+  // LSM6DS_RATE_26_HZ // 26 Hz (38 ms period)
+  // LSM6DS_RATE_52_HZ // 52 Hz (1.9 ms period) 
+  // LSM6DS_RATE_104_HZ // 104 Hz (9.6 ms period)
+  // LSM6DS_RATE_208_HZ // 208 Hz (4.8 ms period)
+  // LSM6DS_RATE_416_HZ // 416 Hz (2.4 ms period)
+  // LSM6DS_RATE_833_HZ // 833 Hz (1.2 ms period)
+  // LSM6DS_RATE_1_66K_HZ // 1.66 kHz
+  // LSM6DS_RATE_3_33K_HZ // 3.33 kHz
+  // LSM6DS_RATE_6_66K_HZ // 6.66 kHz
+
+  lsm6ds33.setAccelDataRate(LSM6DS_RATE_12_5_HZ);
+
+  lsm6ds33.setGyroDataRate(LSM6DS_RATE_12_5_HZ);
+
+  // magic copied from adafruit_lsm6ds33_test
+  lsm6ds33.configInt1(false, false, true); // accelerometer DRDY on INT1
+  lsm6ds33.configInt2(false, true, false); // gyro DRDY on INT2
 
   // BLE init
 
@@ -396,6 +438,35 @@ float RocketelFS::readPressureTempSensor() {
   computeAltitude();
 
   return _pressurePa;
+}
+
+// read acceleration+gyrometer sensor, set relevant private variables
+void RocketelFS::readAccelGyroSensor() {
+  // use Adafruit sensor class to read (only interface available...)
+  sensors_event_t accel;
+  sensors_event_t gyro;
+  sensors_event_t temp;
+  lsm6ds33.getEvent(&accel, &gyro, &temp);
+
+  // convention: set last sensor reading time immediately before read
+  _lastSensorReadingTimeMs = _lastAccelGyroSensorReadingTimeMs = millis();
+  
+  // record acceleration measurements
+  _accelXMps2 = accel.acceleration.x; // - _accelXoffsetMps2; ??
+  _accelYMps2 = accel.acceleration.y; // - _accelZoffsetMps2; ??
+  _accelZMps2 = accel.acceleration.z; // - _accelZoffsetMps2; ??
+
+  // _maxAccelG = 0.0f; // TODO calculate g's and then calculate max
+
+  // record gyrometer measurements
+  _gyroXRadpS = gyro.gyro.x;
+  _gyroYRadpS = gyro.gyro.y;
+  _gyroZRadpS = gyro.gyro.z;
+  // _gyroXOffsetRadpS = 0.0f;
+  // _gyroYOffsetRadpS = 0.0f;
+  // _gyroZOffsetRadpS = 0.0f;
+
+  return;
 }
 
 // change altitude algorithm

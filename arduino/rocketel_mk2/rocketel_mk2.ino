@@ -24,7 +24,7 @@ void setup() { // SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP
   R::init();
 
   Serial.print(F("RocketTel object was "));
-  if ( !R.initialized() ) Serial.print(F("NOT "));
+  if ( !R::initialized() ) Serial.print(F("NOT "));
   Serial.println(F("intialized successfully."));
 
 }
