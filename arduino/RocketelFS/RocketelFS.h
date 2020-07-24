@@ -18,6 +18,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
 #include <Adafruit_LSM6DS33.h>
+#include <Adafruit_APDS9960.h>
 #include <bluefruit.h>
 
 // constants ------------------------------------------------------------------
@@ -222,6 +223,10 @@ class RocketelFS
     static float getLastAccelYMps2() {return _accelYMps2;}
     static float getLastAccelZMps2() {return _accelZMps2;}
     static float getMaxAccelG() {return _maxAccelG;}
+
+    // proximity sensor
+    static uint8_t readProximitySensor(); 
+    static bool detectInside(uint8_t threshold = 25);
 
     // mode functions
     static int getMode() {return _mode;}

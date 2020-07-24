@@ -13,9 +13,15 @@ Adafruit_FlashTransport_QSPI flashTransport;
 Adafruit_SPIFlash flash(&flashTransport);
 FatFileSystem fatfs;
 
+// pressure+temp sensor
 Adafruit_BMP280 bmp; // I2C (with no arguments)
 
+// accel+gyro sensor
 Adafruit_LSM6DS33 lsm6ds33;
+
+// proximity sensor
+Adafruit_APDS9960 apds;
+#define RFS_PROXIMITY_INT_PIN 36
 
 // Constructor ----------------------------------------------------------------
 RocketelFS::RocketelFS()
@@ -120,6 +126,23 @@ bool RocketelFS::init()
   // magic copied from adafruit_lsm6ds33_test
   lsm6ds33.configInt1(false, false, true); // accelerometer DRDY on INT1
   lsm6ds33.configInt2(false, true, false); // gyro DRDY on INT2
+
+  // init proximity sensor
+  pinMode(RFS_PROXIMITY_INT_PIN, INPUT_PULLUP);
+
+  if(!apds.begin()){
+    Serial.println(F("ERROR: Could not find a valid APDS9960 sensor!"));
+    return false;
+  }
+
+  //enable proximity mode
+  apds.enableProximity(true);
+
+//  //set the interrupt threshold to fire when proximity reading goes above xxx
+//  apds.setProximityInterruptThreshold(0, xxx);
+
+//  //enable the proximity interrupt
+//  apds.enableProximityInterrupt();
 
   // BLE init
 
@@ -467,6 +490,21 @@ void RocketelFS::readAccelGyroSensor() {
   // _gyroZOffsetRadpS = 0.0f;
 
   return;
+}
+
+// read proximity sensor
+uint8_t RocketelFS::readProximitySensor() 
+{
+  return apds.readProximity();
+} 
+
+// use the prxomity sensor to decide if we are "inside" or "outside"
+// high readings indicate things are close to proximity sensor
+// if proximity sensor reading >= threshold, decide "inside" and return true
+//    otherwise, return false
+bool RocketelFS::detectInside(uint8_t threshold)
+{
+  return ( readProximitySensor() >= threshold ); 
 }
 
 // change altitude algorithm
