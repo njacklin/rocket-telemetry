@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "/Users/njacklin/Library/Arduino15/packages/adafruit/**",
+                "/Users/njacklin/Documents/Arduino/libraries/**",
+                "/Users/njacklin/Library/Arduino15/packages/adafruit/hardware/nrf52/0.20.1/**",
+                "/Users/njacklin/Library/Arduino15/packages/adafruit/tools/**"
+            ],
+            "forcedInclude": [],
+            "macFrameworkPath": [
+                "/System/Library/Frameworks",
+                "/Library/Frameworks"
+            ],
+            "intelliSenseMode": "clang-x64",
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
