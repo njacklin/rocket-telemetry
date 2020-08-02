@@ -493,10 +493,19 @@ void RocketelFS::readAccelGyroSensor() {
 }
 
 // read proximity sensor
+// note: for the moment, this sensor does not get stored... maybe it should? TODO
 uint8_t RocketelFS::readProximitySensor() 
 {
   return apds.readProximity();
 } 
+
+// read "all" sensors
+// TODO think about name, becuase we are not reading battery or proximity sensors
+void RocketelFS::readAllSensors() 
+{
+  readPressureTempSensor();
+  readAccelGyroSensor();
+}
 
 // use the prxomity sensor to decide if we are "inside" or "outside"
 // high readings indicate things are close to proximity sensor
@@ -575,9 +584,9 @@ int RocketelFS::readBattery() {
   return _batteryLevel;
 }
 
-// update BLE battery level advertised
+// update BLE battery level characteristic
+// TODO consider adding hysteresis to smooth out battery readings
 // return battery level
-// BUG: this always returns around 0.5V == 14% right now
 int RocketelFS::updateBLEBatteryLevel(bool newMeasurement = true) {
   if (newMeasurement)
     blebas.write(readBattery());

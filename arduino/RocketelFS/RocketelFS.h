@@ -187,7 +187,7 @@ class RocketelFS
     // debug flag (print DEBUG messages if true)
     static inline bool debug = false;
 
-    // public methods
+    // initialization methods
     static bool init();
     static bool initialized() {return _bInit;}
 
@@ -227,6 +227,10 @@ class RocketelFS
     // proximity sensor
     static uint8_t readProximitySensor(); 
     static bool detectInside(uint8_t threshold = 25);
+
+    // all-sensor methods
+    static void readAllSensors();
+    static unsigned long getLastSensorReadingTimeMs() {return _lastSensorReadingTimeMs;}
 
     // mode functions
     static int getMode() {return _mode;}
@@ -365,7 +369,7 @@ class RocketelFS
     static inline float _gyroZOffsetRadpS = 0.0f;
 
     static inline unsigned long _lastAccelGyroSensorReadingTimeMs = 0L; 
-
+ 
     // last sensor reading; should be updated whenever _any_ sensor is read
     static inline unsigned long _lastSensorReadingTimeMs = 0L;
 
