@@ -5,8 +5,8 @@
             "includePath": [
                 "/Users/njacklin/Library/Arduino15/packages/adafruit/**",
                 "/Users/njacklin/Documents/Arduino/libraries/**",
-                "/Users/njacklin/Library/Arduino15/packages/adafruit/hardware/nrf52/0.20.1/**",
-                "/Users/njacklin/Library/Arduino15/packages/adafruit/tools/**"
+                "/Users/njacklin/Library/Arduino15/packages/adafruit/tools/**",
+                "/Users/njacklin/Library/Arduino15/packages/adafruit/hardware/nrf52/0.20.5/**"
             ],
             "forcedInclude": [],
             "macFrameworkPath": [
