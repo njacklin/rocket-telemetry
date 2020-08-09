@@ -15,7 +15,7 @@ using R = RocketelFS;
 unsigned long lastBatteryReadMs = 0L;
 unsigned long lastBLETDSUpdateMs = 0L;
 
-
+read
 void setup() { // SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP 
 
   //// setup serial
@@ -74,7 +74,7 @@ void loop() { // LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP
 
   // update BLE TDS
   if ( millis() - lastBLETDSUpdateMs >= UPDATE_BLE_TDS_RATE_MS ) {
-    updateBLETDS();
+    R::updateBLETDS();
   }
 
   
