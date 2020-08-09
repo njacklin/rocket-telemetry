@@ -1,5 +1,7 @@
 {
     "board": "adafruit:nrf52:feather52840sense",
     "configuration": "softdevice=s140v6,debug=l0",
-    "sketch": "rocketel_mk2/rocketel_mk2.ino"
+    "sketch": "rocketel_mk2/rocketel_mk2.ino",
+    "port": "/dev/tty.usbmodem14101",
+    "programmer": "USBtinyISP"
 }
