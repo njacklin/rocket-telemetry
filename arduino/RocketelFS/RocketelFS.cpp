@@ -236,7 +236,7 @@ bool RocketelFS::init()
 
   // TDS:max_altitude_m (float) characteristic
   bletds_max_altitude_m = BLECharacteristic(UUID128_CHR_TDS_MAX_ALTITUDE_M);
-  bletds_max_altitude_m.setProperties(CHR_PROPS_READ|CHR_PROPS_NOTIFY);
+  bletds_max_altitude_m.setProperties(CHR_PROPS_READ);
   bletds_max_altitude_m.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   bletds_max_altitude_m.setFixedLen(4);
   bletds_max_altitude_m.begin();
@@ -409,13 +409,100 @@ bool RocketelFS::init()
   Bluefruit.Advertising.setFastTimeout(30);      // number of seconds in fast mode
   Bluefruit.Advertising.start(0);  // Stop advertising entirely after ADV_TIMEOUT seconds, 0 = never
 
-  // set mode to READ
-  // TODO consider calling a private changeMode(toMode) method...
-  _mode = RFS_MODE_READ;
-  bletds_mode_str.write("MODE:READ");
+  // set mode to STANDBY
+  changeMode(MODE_STANDBY);
 
   // set initilized flag and exit
   return _bInit = true;
+}
+
+// change mode function
+// returns true if success, false if failed 
+bool RocketelFS::changeMode(int toMode) {
+
+  // flush flash writes if going out of record mode
+  if ( _mode == MODE_RECORD && _mode != MODE_RECORD) {
+    closeFlashFile();
+  }
+
+  // do mode switching
+  switch (toMode) {
+    case MODE_INIT: // not sure why we would want to do this.. maybe to "RESET"?
+      _mode = MODE_INIT;
+      break;
+
+    case MODE_STANDBY:
+      _mode = MODE_STANDBY;
+      break;
+
+    case MODE_READ:
+      _mode = MODE_READ;
+      break;
+
+    case MODE_RECORD:
+      // sensor initial readings
+      if ( detectInside() )
+        _insideAtStart = true;
+      else
+        _insideAtStart = false;
+
+      // set pressure and altitude offsets based on altitude algorithm
+      readPressureTempSensor();
+
+      if ( !strcmp(_altitudeAlgorithm,"1A") ) {
+        _pressureOffsetPa = _pressurePa;
+        _altitudeOffsetM = 0.0f;
+      } else if ( !strcmp(_altitudeAlgorithm,"1B") ) {
+        _pressureOffsetPa = 101325.0f;
+        _altitudeOffsetM = 44330.0f * (1.0f - pow(_pressurePa / _pressureOffsetPa, 0.1903f));
+      } else if ( _altitudeAlgorithm[0] == '2') {
+        Serial.println(F("ERROR: altitude algorithm not yet implemented"));
+        return false;
+      } else {
+        Serial.println(F("ERROR: invalid altitude algorithm"));
+        return false;
+      }
+      
+      // accel and gyro offset measurements
+      _accelXoffsetMps2 = _accelYoffsetMps2 = _accelZoffsetMps2 = 0.0f;
+      _gyroXoffsetRadpS = _gyroYoffsetRadpS = _gyroZoffsetRadpS = 0.0f;
+
+      for ( int i = 0; i < 10; i++ ) {
+        readAccelGyroSensor(false); // don't apply offsets for the moment
+
+        _accelXoffsetMps2 += _accelXMps2;
+        _accelYoffsetMps2 += _accelYMps2;
+        _accelZoffsetMps2 += _accelZMps2;
+
+        _gyroXoffsetRadpS += _gyroXRadpS;
+        _gyroYoffsetRadpS += _gyroYRadpS;
+        _gyroZoffsetRadpS += _gyroZRadpS;
+
+        delay(100);
+      }
+
+      _accelXoffsetMps2 /= 10.0f;
+      _accelYoffsetMps2 /= 10.0f;
+      _accelZoffsetMps2 /= 10.0f;
+      _gyroXoffsetRadpS /= 10.0f;
+      _gyroYoffsetRadpS /= 10.0f;
+      _gyroZoffsetRadpS /= 10.0f;
+
+      // open new log
+      if ( !openNewLog() ) 
+        return false;
+      
+      _mode = MODE_RECORD;
+
+      break;
+
+    default:
+      Serial.print(F("ERROR: asked to change to invalid mode = "));
+      Serial.println(toMode);
+      return false;
+  }
+
+  return true;
 }
 
 // get flash (QPSI flash chip) ID
@@ -458,13 +545,13 @@ float RocketelFS::readPressureTempSensor() {
   _tempDegC = bmp.readTemperature();
 
   // compute altitude
-  computeAltitude();
+  _computeAltitude();
 
   return _pressurePa;
 }
 
 // read acceleration+gyrometer sensor, set relevant private variables
-void RocketelFS::readAccelGyroSensor() {
+void RocketelFS::readAccelGyroSensor(bool applyOffsets) {
   // use Adafruit sensor class to read (only interface available...)
   sensors_event_t accel;
   sensors_event_t gyro;
@@ -475,19 +562,28 @@ void RocketelFS::readAccelGyroSensor() {
   _lastSensorReadingTimeMs = _lastAccelGyroSensorReadingTimeMs = millis();
   
   // record acceleration measurements
-  _accelXMps2 = accel.acceleration.x; // - _accelXoffsetMps2; ??
-  _accelYMps2 = accel.acceleration.y; // - _accelZoffsetMps2; ??
-  _accelZMps2 = accel.acceleration.z; // - _accelZoffsetMps2; ??
+  if ( applyOffsets ) {
+    _accelXMps2 = accel.acceleration.x - _accelXoffsetMps2; 
+    _accelYMps2 = accel.acceleration.y - _accelYoffsetMps2; 
+    _accelZMps2 = accel.acceleration.z - _accelZoffsetMps2; 
+  } else {
+    _accelXMps2 = accel.acceleration.x; 
+    _accelYMps2 = accel.acceleration.y; 
+    _accelZMps2 = accel.acceleration.z; 
+  }
 
   // _maxAccelG = 0.0f; // TODO calculate g's and then calculate max
 
   // record gyrometer measurements
-  _gyroXRadpS = gyro.gyro.x;
-  _gyroYRadpS = gyro.gyro.y;
-  _gyroZRadpS = gyro.gyro.z;
-  // _gyroXOffsetRadpS = 0.0f;
-  // _gyroYOffsetRadpS = 0.0f;
-  // _gyroZOffsetRadpS = 0.0f;
+  if ( applyOffsets ) {
+    _gyroXRadpS = gyro.gyro.x - _gyroXoffsetRadpS;
+    _gyroYRadpS = gyro.gyro.y - _gyroYoffsetRadpS;
+    _gyroZRadpS = gyro.gyro.z - _gyroZoffsetRadpS;
+  } else {
+    _gyroXRadpS = gyro.gyro.x;
+    _gyroYRadpS = gyro.gyro.y;
+    _gyroZRadpS = gyro.gyro.z;
+  }
 
   return;
 }
@@ -543,7 +639,7 @@ bool RocketelFS::changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt) {
     _maxAltitudeM  = 0.0f;
   
   // recompute altitude
-  computeAltitude();
+  _computeAltitude();
 
   if (debug)
     Serial.println(F("DEBUG: exiting changeAltitudeAlgorithm() successfully.")); 
@@ -553,18 +649,10 @@ bool RocketelFS::changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt) {
 
 // read and return battery level
 // based on https://learn.adafruit.com/adafruit-feather-sense/nrf52-adc
+// TODO consider adding hysteresis to smooth out battery readings
 int RocketelFS::readBattery() {
-  // if (debug) {
-  //   Serial.print(F("DEBUG: analogRead(PIN_BATTERYADC) = "));
-  //   Serial.println(analogRead(PIN_BATTERYADC));
-  // }
 
   _batteryVoltage = _batteryADCvoltPerLsb * (float)analogRead(PIN_BATTERYADC);
-
-  // if (debug) {
-  //   Serial.print("DEBUG: battery voltage (V) = ");
-  //   Serial.println(_batteryVoltage);
-  // }
 
   if ( _batteryVoltage < 3.3f ) {
     _batteryLevel = 0;
@@ -576,22 +664,14 @@ int RocketelFS::readBattery() {
 
   _batteryLevel = constrain(_batteryLevel,0,100);
 
-  // if (debug) {
-  //   Serial.print("DEBUG: battery level (%) = ");
-  //   Serial.println(_batteryLevel);
-  // }
-
   return _batteryLevel;
 }
 
 // update BLE battery level characteristic
-// TODO consider adding hysteresis to smooth out battery readings
 // return battery level
-int RocketelFS::updateBLEBatteryLevel(bool newMeasurement = true) {
-  if (newMeasurement)
-    blebas.write(readBattery());
-  else
-    blebas.write(_batteryLevel);
+int RocketelFS::updateBLEBatteryLevel() {
+  
+  blebas.write(_batteryLevel);
 
   return _batteryLevel;
 }
@@ -599,63 +679,65 @@ int RocketelFS::updateBLEBatteryLevel(bool newMeasurement = true) {
 // update all the characteristics of the BLE Telemetry Data Service
 // the behavior of the method is affected by _mode 
 void RocketelFS::updateBLETDS() {
+  
+  // gather data in proper type variables
   uint32_t timestampMs_uint32 = (uint32_t) _lastSensorReadingTimeMs;
   // TODO: think very carefully about what timestamp to report...
   uint32_t pressurePa_uint32 = (uint32_t) _pressurePa;
 
-  // timestamp characteristics
-  // TODO: move to mode WRITE only?  but it's useful...
-  bletds_timestamp_ms.notify(&timestampMs_uint32,4);
-  sprintf(_bleTimestampMsStr,"Time(ms):%d",timestampMs_uint32);
-  bletds_timestamp_ms_str.write(_bleTimestampMsStr);
+  // log index
+  bletds_log_index.write(&_currentLogIndex,1);
+  sprintf(_bleLogIndexStr,"Log:%d",_currentLogIndex);
+  bletds_log_index_str.write(_bleLogIndexStr);
 
   // pressure characteristics
-  // TODO: move to mode WRITE only?  but it's useful...
-  bletds_pressure_pa.notify(&pressurePa_uint32,4);
+  bletds_pressure_pa.write(&pressurePa_uint32,4);
   sprintf(_blePressurePaStr,"P(Pa):%d",pressurePa_uint32);
-  bletds_pressure_pa_str.notify(_blePressurePaStr);
+  bletds_pressure_pa_str.write(_blePressurePaStr);
 
   // altitude and max altitude characteristics
-  bletds_altitude_m.notify(&_altitudeM,4);
+  bletds_altitude_m.write(&_altitudeM,4);
 
   if ( strcmp(_altitudeStrUnits,"m") == 0 )
     sprintf(_bleAltitudeStr,"Alt(m):%.1f",_altitudeM);
   else if ( strcmp(_altitudeStrUnits,"ft") == 0 )
     sprintf(_bleAltitudeStr,"Alt(ft):%.1f",_altitudeM*RFS_CONVERT_M_TO_FT);
                                 
-  bletds_altitude_str.notify(_bleAltitudeStr);
+  bletds_altitude_str.write(_bleAltitudeStr);
   
-  bletds_max_altitude_m.notify(&_maxAltitudeM,4);
+  bletds_max_altitude_m.write(&_maxAltitudeM,4);
   
   if ( strcmp(_altitudeStrUnits,"m") == 0 )
     sprintf(_bleMaxAltitudeStr,"MaxAlt(m):%.1f",_maxAltitudeM);
   else if ( strcmp(_altitudeStrUnits,"ft") == 0 )
     sprintf(_bleMaxAltitudeStr,"MaxAlt(ft):%.1f",_maxAltitudeM*RFS_CONVERT_M_TO_FT);
   
-  bletds_max_altitude_str.notify(_bleMaxAltitudeStr);
+  bletds_max_altitude_str.write(_bleMaxAltitudeStr);
 
-  // mode-specific updates
+  // update mode characteristic
   switch (_mode) {
-    case RFS_MODE_READ:
-      // update mode characteristic
+    case RocketelFS::MODE_STANDBY:
+      bletds_mode_str.write("MODE:STANDBY");
+      break;
+    case RocketelFS::MODE_READ:
       bletds_mode_str.write("MODE:READ");
-
-      // TODO
-
       break;
-
-    case RFS_MODE_WRITE:
-      // update mode characteristic
-      bletds_mode_str.write("MODE:WRITE");
-
-      // TODO
-
+    case RocketelFS::MODE_RECORD:
+      bletds_mode_str.write("MODE:RECORD");
       break;
-
     default:
       Serial.print(F("ERROR: Invalid mode in updateBLETDS(): "));
       Serial.println(_mode);
   }
+
+  // timestamp characteristics
+  sprintf(_bleTimestampMsStr,"Time(ms):%d",timestampMs_uint32);
+  bletds_timestamp_ms_str.write(_bleTimestampMsStr);
+  // update this characteristic last because its notify tips off the receiver that new data is ready
+  bletds_timestamp_ms.notify(&timestampMs_uint32,4);
+
+  // set last update time
+  _lastBLETDSupdateTimeMs = millis();
 }
 
 // handle writes to BLE TCFGS characteristics
@@ -664,7 +746,7 @@ void RocketelFS::bletcfgsWriteCallback(uint16_t conn_hdl, BLECharacteristic* bch
 {
   float fval;
 
-  if ( _mode != RFS_MODE_READ )
+  if ( _mode != RocketelFS::MODE_READ )
     return;
 
   if ( bchr == &bletcfgs_altitude_algorithm_str ) {
@@ -716,6 +798,7 @@ void RocketelFS::bleConnectCallback(uint16_t conn_handle)
   // Get the reference to current connection
   BLEConnection* connection = Bluefruit.Connection(conn_handle);
 
+  // get central name
   char central_name[32] = { 0 };
   connection->getPeerName(central_name, sizeof(central_name));
 
@@ -723,6 +806,11 @@ void RocketelFS::bleConnectCallback(uint16_t conn_handle)
     Serial.print(F("DEBUG: BLE Connected to "));
     Serial.println(central_name);
   }
+
+  // increment connection counter
+  _bleConnections++;
+
+  _bleConnected = true;
 }
 
 // Callback invoked when a BLE connection is dropped
@@ -736,6 +824,17 @@ void RocketelFS::bleDisconnectCallback(uint16_t conn_handle, uint8_t reason)
     Serial.print(F("DEBUG: BLE Disconnected, reason = 0x"));
     Serial.println(reason, HEX);
   }
+
+  // decrement connection counter 
+  _bleConnections--;
+
+  if (debug && _bleConnections < 0)
+    Serial.print(F("DEBUG: BLE connection counter < 0, uh-oh"));
+
+  // lower connected flag
+  if (_bleConnections == 0)
+    _bleConnected = false;
+
 }
 
 
@@ -877,7 +976,7 @@ bool RocketelFS::flushFlashWrites()
   // close .DAT file
   _file.close();
 
-  _lastFlashFlushms = millis();
+  _lastFlashFlushTimeMs = millis();
 
   // append num records to .META file
   strcpy(&_filename[6],"META"); // change _filename to "LOGNN.META"
@@ -887,7 +986,6 @@ bool RocketelFS::flushFlashWrites()
   //   Serial.println(_filename);
   // }
   
-  // write log index (redundant, but good integrity checking)
   _file.print("NR:"); 
   _file.print(_numRecordsWritten); 
   _file.println();
@@ -940,7 +1038,7 @@ bool RocketelFS::closeFlashFile()
 // this will take the current _pressurePa, _altitudeAlgorithm, and related data,
 // and compute the alititude measurement, and update maxAltitude if necessary.
 // returns the computed altitude in m
-float RocketelFS::computeAltitude() 
+float RocketelFS::_computeAltitude() 
 {
   // error checking
   if ( strcmp(_altitudeAlgorithm,"1A") == 0 && _altitudeOffsetM != 0.0f ) {

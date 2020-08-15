@@ -30,11 +30,6 @@
 #define PIN_USERSW PIN_BUTTON1
 #define RFS_BUTTON_PRESSED_VALUE (0)
 
-// modes
-#define RFS_MODE_INIT (0)
-#define RFS_MODE_READ (1)
-#define RFS_MODE_WRITE (2)
-
 // data record params
 #define RFS_RECORD_FORMAT (1) 
 // format 1 = ( [uint16] timestamp_ms, [int16] pressure_pa - 100000, [int16] altitude_dm )
@@ -187,6 +182,16 @@ class RocketelFS
     // debug flag (print DEBUG messages if true)
     static inline bool debug = false;
 
+    // modes
+    enum MODE {
+        MODE_INIT = 0,
+        MODE_STANDBY = 1,
+        MODE_READ = 2,
+        MODE_RECORD = 3
+    };
+
+    static bool changeMode(int toMode);
+
     // initialization methods
     static bool init();
     static bool initialized() {return _bInit;}
@@ -198,6 +203,7 @@ class RocketelFS
     static bool openNewLog();
     static bool writeFlashRecord();
     static bool flushFlashWrites();
+    static unsigned long getLastFlashFlushTimeMs() {return _lastFlashFlushTimeMs;}
 
     static bool openLogForRead(int logIndex);
     static bool closeFlashFile();
@@ -208,6 +214,7 @@ class RocketelFS
     static int readBattery();
     static float getLastBatteryVoltage() {return _batteryVoltage;}
     static int getLastBatteryLevel() {return _batteryLevel;}
+    static unsigned long getLastBatteryReadingTimeMs() {return _lastBatteryReadingTimeMs;}
     
     // pressure+temperature sensor methods
     static float readPressureTempSensor();
@@ -218,7 +225,7 @@ class RocketelFS
     static bool changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt = true);
 
     // acceleration+gyrometer sensor methods
-    static void readAccelGyroSensor();
+    static void readAccelGyroSensor(bool applyOffsets = true);
     static float getLastAccelXMps2() {return _accelXMps2;}
     static float getLastAccelYMps2() {return _accelYMps2;}
     static float getLastAccelZMps2() {return _accelZMps2;}
@@ -234,6 +241,9 @@ class RocketelFS
 
     // mode functions
     static int getMode() {return _mode;}
+
+    // BLE properties
+    static inline bool isBleConnected() {return _bleConnected;}
 
     // expose BLE services and characteristics
     static inline BLEDis bledis; // DIS (Device Information Service) helper object
@@ -283,6 +293,7 @@ class RocketelFS
     static void bleConnectCallback(uint16_t conn_handle);
     static void bleDisconnectCallback(uint16_t conn_handle, uint8_t reason);
     static void bletcfgsWriteCallback(uint16_t conn_hdl, BLECharacteristic* bchr, uint8_t* data, uint16_t len);
+    static void bletcmdsWriteCallback(uint16_t conn_hdl, BLECharacteristic* bchr, uint8_t* data, uint16_t len);
 
     // BLE methods
     static void updateBLETDS();
@@ -291,8 +302,9 @@ class RocketelFS
     static bool readBLECmdGotoRead(); // DEBUG
     static bool readBLECmdGotoWrite(); // DEBUG
     
-    static int updateBLEBatteryLevel(bool newMeasurement);
-    // might want to make low level functions like this private eventually
+    static int updateBLEBatteryLevel();
+
+    static unsigned long getLastBLETDSupdateTimeMs() {return _lastBLETDSupdateTimeMs;}
 
     // misc
     static float convertDegCtoF(float degC) { return degC * 1.8f + 32.0f; }
@@ -311,7 +323,7 @@ class RocketelFS
     // Flash fields
     static inline File _file; // can only have one open, so might as well reuse
     static inline char _filename[64] = ""; 
-    static inline long _lastFlashFlushms;
+    static inline unsigned long _lastFlashFlushTimeMs = 0L;
     static inline uint32_t _numRecordsWritten = 0;
 
     static inline int8_t _lastLogIndex = -1;
@@ -328,17 +340,21 @@ class RocketelFS
     static inline char _bleName[32] = "RocketelFS-1"; // TODO: verify max length
     static inline char _bleManufacturerStr[32] = "Neil Jacklin | njtronics.com"; // TODO: verify max length
     static inline char _bleModelStr[32] = "Mark 2"; // TODO: verify max length
-    static inline char _bleModeStr[20] = "INIT";
+    static inline char _bleModeStr[20] = "MODE:INIT";
     static inline char _bleLogIndexStr[20] = "";
     static inline char _bleTimestampMsStr[20] = "";
     static inline char _blePressurePaStr[20] = "";
     static inline char _bleAltitudeStr[20] = "";
     static inline char _bleMaxAltitudeStr[20] = "";
+    static inline bool _bleConnected;
+    static inline int _bleConnections = 0;
+    static inline unsigned long _lastBLETDSupdateTimeMs = 0L;
 
     // battery voltage and level
     static inline float _batteryVoltage = 0.0f;
     static inline int _batteryLevel = 0;  // 0 - 100
     static inline float _batteryADCvoltPerLsb = 0.0f; // assigned in begin()
+    static inline unsigned long _lastBatteryReadingTimeMs = 0L;
 
     // pressure and temperature data, calculated altitude, and altitude settings
     static inline float _pressurePa = 0.0f;
@@ -364,12 +380,15 @@ class RocketelFS
     static inline float _gyroXRadpS = 0.0f;
     static inline float _gyroYRadpS = 0.0f;
     static inline float _gyroZRadpS = 0.0f;
-    static inline float _gyroXOffsetRadpS = 0.0f;
-    static inline float _gyroYOffsetRadpS = 0.0f;
-    static inline float _gyroZOffsetRadpS = 0.0f;
+    static inline float _gyroXoffsetRadpS = 0.0f;
+    static inline float _gyroYoffsetRadpS = 0.0f;
+    static inline float _gyroZoffsetRadpS = 0.0f;
 
     static inline unsigned long _lastAccelGyroSensorReadingTimeMs = 0L; 
- 
+
+    // proximity sensor
+    static inline bool _insideAtStart = true;
+
     // last sensor reading; should be updated whenever _any_ sensor is read
     static inline unsigned long _lastSensorReadingTimeMs = 0L;
 
@@ -379,7 +398,7 @@ class RocketelFS
     // private methods
 
     // pressure and temp sensor
-    static float computeAltitude();
+    static float _computeAltitude();
 
 };
 
