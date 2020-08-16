@@ -127,10 +127,14 @@ const uint8_t UUID128_SVC_TCMDS[16] = {
 const uint8_t UUID128_CHR_TCMDS_GOTO_MODE_READ[16] = {
     0xb7, 0x6e, 0xec, 0xdf, 0x85, 0x65, 0x29, 0x82,
     0x61, 0x4d, 0xbc, 0x49, 0x01, 0x00, 0x97, 0xe0  };
-// BLE UUID for TCMDS:goto_mode_write         : e0970002-49bc-4d61-8229-6585dfec6eb7
-const uint8_t UUID128_CHR_TCMDS_GOTO_MODE_WRITE[16] = {
+// BLE UUID for TCMDS:goto_mode_record        : e0970002-49bc-4d61-8229-6585dfec6eb7
+const uint8_t UUID128_CHR_TCMDS_GOTO_MODE_RECORD[16] = {
     0xb7, 0x6e, 0xec, 0xdf, 0x85, 0x65, 0x29, 0x82,
     0x61, 0x4d, 0xbc, 0x49, 0x02, 0x00, 0x97, 0xe0  };
+// BLE UUID for TCMDS:goto_mode_standby       : e0970003-49bc-4d61-8229-6585dfec6eb7
+const uint8_t UUID128_CHR_TCMDS_GOTO_MODE_STANDBY[16] = {
+    0xb7, 0x6e, 0xec, 0xdf, 0x85, 0x65, 0x29, 0x82,
+    0x61, 0x4d, 0xbc, 0x49, 0x03, 0x00, 0x97, 0xe0  };
 // BLE UUID for TCMDS:open_log                : e0970011-49bc-4d61-8229-6585dfec6eb7
 const uint8_t UUID128_CHR_TCMDS_OPEN_LOG[16] = {
     0xb7, 0x6e, 0xec, 0xdf, 0x85, 0x65, 0x29, 0x82,
@@ -190,8 +194,6 @@ class RocketelFS
         MODE_RECORD = 3
     };
 
-    static bool changeMode(int toMode);
-
     // initialization methods
     static bool init();
     static bool initialized() {return _bInit;}
@@ -207,6 +209,9 @@ class RocketelFS
 
     static bool openLogForRead(int logIndex);
     static bool closeFlashFile();
+    static void listAllFiles();
+
+    static bool deleteLog(int logIndex);
 
     static int getCurrentLogIndex() {return _currentLogIndex;}
 
@@ -241,6 +246,7 @@ class RocketelFS
 
     // mode functions
     static int getMode() {return _mode;}
+    static bool changeMode(int toMode);
 
     // BLE properties
     static inline bool isBleConnected() {return _bleConnected;}
@@ -279,7 +285,8 @@ class RocketelFS
     // custom telemetry command service
     static inline BLEService bletcmds;
     static inline BLECharacteristic bletcmds_goto_mode_read;
-    static inline BLECharacteristic bletcmds_goto_mode_write;
+    static inline BLECharacteristic bletcmds_goto_mode_record;
+    static inline BLECharacteristic bletcmds_goto_mode_standby;
     static inline BLECharacteristic bletcmds_open_log;
     static inline BLECharacteristic bletcmds_delete_log;
     static inline BLECharacteristic bletcmds_transfer_log_uart;
@@ -299,12 +306,11 @@ class RocketelFS
     static void updateBLETDS();
     static void updateBLETCFGS(); // TODO 
     static void updateBLETCMDS(); // TODO
-    static bool readBLECmdGotoRead(); // DEBUG
-    static bool readBLECmdGotoWrite(); // DEBUG
     
-    static int updateBLEBatteryLevel();
+    static int updateBLEBAS();
 
-    static unsigned long getLastBLETDSupdateTimeMs() {return _lastBLETDSupdateTimeMs;}
+    static unsigned long getLastBLEBASUpdateTimeMs() {return _lastBLEBASUpdateTimeMs;}
+    static unsigned long getLastBLETDSUpdateTimeMs() {return _lastBLETDSUpdateTimeMs;}
 
     // misc
     static float convertDegCtoF(float degC) { return degC * 1.8f + 32.0f; }
@@ -348,7 +354,8 @@ class RocketelFS
     static inline char _bleMaxAltitudeStr[20] = "";
     static inline bool _bleConnected;
     static inline int _bleConnections = 0;
-    static inline unsigned long _lastBLETDSupdateTimeMs = 0L;
+    static inline unsigned long _lastBLEBASUpdateTimeMs = 0L;
+    static inline unsigned long _lastBLETDSUpdateTimeMs = 0L;
 
     // battery voltage and level
     static inline float _batteryVoltage = 0.0f;
@@ -373,16 +380,16 @@ class RocketelFS
     static inline float _accelXMps2 = 0.0f;
     static inline float _accelYMps2 = 0.0f;
     static inline float _accelZMps2 = 0.0f;
-    static inline float _accelXoffsetMps2 = 0.0f;
-    static inline float _accelYoffsetMps2 = 0.0f;
-    static inline float _accelZoffsetMps2 = 0.0f;
+    static inline float _accelXOffsetMps2 = 0.0f;
+    static inline float _accelYOffsetMps2 = 0.0f;
+    static inline float _accelZOffsetMps2 = 0.0f;
     static inline float _maxAccelG = 0.0f;
     static inline float _gyroXRadpS = 0.0f;
     static inline float _gyroYRadpS = 0.0f;
     static inline float _gyroZRadpS = 0.0f;
-    static inline float _gyroXoffsetRadpS = 0.0f;
-    static inline float _gyroYoffsetRadpS = 0.0f;
-    static inline float _gyroZoffsetRadpS = 0.0f;
+    static inline float _gyroXOffsetRadpS = 0.0f;
+    static inline float _gyroYOffsetRadpS = 0.0f;
+    static inline float _gyroZOffsetRadpS = 0.0f;
 
     static inline unsigned long _lastAccelGyroSensorReadingTimeMs = 0L; 
 

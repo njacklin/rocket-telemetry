@@ -324,22 +324,34 @@ bool RocketelFS::init()
   bletcmds_goto_mode_read = BLECharacteristic(UUID128_CHR_TCMDS_GOTO_MODE_READ);
   bletcmds_goto_mode_read.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
   bletcmds_goto_mode_read.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcmds_goto_mode_read.setWriteCallback(bletcmdsWriteCallback);
   bletcmds_goto_mode_read.setFixedLen(1); 
   bletcmds_goto_mode_read.begin();
   bletcmds_goto_mode_read.write8(0);
 
-  // TCMDS:goto_mode_write (uint8) characteristic
-  bletcmds_goto_mode_write = BLECharacteristic(UUID128_CHR_TCMDS_GOTO_MODE_WRITE);
-  bletcmds_goto_mode_write.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
-  bletcmds_goto_mode_write.setPermission(SECMODE_OPEN, SECMODE_OPEN);
-  bletcmds_goto_mode_write.setFixedLen(1); 
-  bletcmds_goto_mode_write.begin();
-  bletcmds_goto_mode_write.write8(0);
+  // TCMDS:goto_mode_record (uint8) characteristic
+  bletcmds_goto_mode_record = BLECharacteristic(UUID128_CHR_TCMDS_GOTO_MODE_RECORD);
+  bletcmds_goto_mode_record.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcmds_goto_mode_record.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcmds_goto_mode_record.setWriteCallback(bletcmdsWriteCallback);
+  bletcmds_goto_mode_record.setFixedLen(1); 
+  bletcmds_goto_mode_record.begin();
+  bletcmds_goto_mode_record.write8(0);
+
+  // TCMDS:goto_mode_standby (uint8) characteristic
+  bletcmds_goto_mode_standby = BLECharacteristic(UUID128_CHR_TCMDS_GOTO_MODE_STANDBY);
+  bletcmds_goto_mode_standby.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
+  bletcmds_goto_mode_standby.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcmds_goto_mode_standby.setWriteCallback(bletcmdsWriteCallback);
+  bletcmds_goto_mode_standby.setFixedLen(1); 
+  bletcmds_goto_mode_standby.begin();
+  bletcmds_goto_mode_standby.write8(0);
 
   // TCMDS:open_log (uint8) characteristic
   bletcmds_open_log = BLECharacteristic(UUID128_CHR_TCMDS_OPEN_LOG);
   bletcmds_open_log.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
   bletcmds_open_log.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcmds_open_log.setWriteCallback(bletcmdsWriteCallback);
   bletcmds_open_log.setFixedLen(1); 
   bletcmds_open_log.begin();
   bletcmds_open_log.write8(0);
@@ -348,6 +360,7 @@ bool RocketelFS::init()
   bletcmds_delete_log = BLECharacteristic(UUID128_CHR_TCMDS_DELETE_LOG);
   bletcmds_delete_log.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
   bletcmds_delete_log.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcmds_delete_log.setWriteCallback(bletcmdsWriteCallback);
   bletcmds_delete_log.setFixedLen(1); 
   bletcmds_delete_log.begin();
   bletcmds_delete_log.write8(0);
@@ -356,6 +369,7 @@ bool RocketelFS::init()
   bletcmds_transfer_log_uart = BLECharacteristic(UUID128_CHR_TCMDS_TRANSFER_LOG_UART);
   bletcmds_transfer_log_uart.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
   bletcmds_transfer_log_uart.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcmds_transfer_log_uart.setWriteCallback(bletcmdsWriteCallback);
   bletcmds_transfer_log_uart.setFixedLen(1); 
   bletcmds_transfer_log_uart.begin();
   bletcmds_transfer_log_uart.write8(0);
@@ -364,6 +378,7 @@ bool RocketelFS::init()
   bletcmds_erase_all = BLECharacteristic(UUID128_CHR_TCMDS_ERASE_ALL);
   bletcmds_erase_all.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
   bletcmds_erase_all.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcmds_erase_all.setWriteCallback(bletcmdsWriteCallback);
   bletcmds_erase_all.setFixedLen(1); 
   bletcmds_erase_all.begin();
   bletcmds_erase_all.write8(0);
@@ -372,6 +387,7 @@ bool RocketelFS::init()
   bletcmds_log_index = BLECharacteristic(UUID128_CHR_TCMDS_LOG_INDEX);
   bletcmds_log_index.setProperties(CHR_PROPS_READ | CHR_PROPS_WRITE);
   bletcmds_log_index.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  bletcmds_log_index.setWriteCallback(bletcmdsWriteCallback);
   bletcmds_log_index.setFixedLen(1); 
   bletcmds_log_index.begin();
   bletcmds_log_index.write8(0);
@@ -464,29 +480,29 @@ bool RocketelFS::changeMode(int toMode) {
       }
       
       // accel and gyro offset measurements
-      _accelXoffsetMps2 = _accelYoffsetMps2 = _accelZoffsetMps2 = 0.0f;
-      _gyroXoffsetRadpS = _gyroYoffsetRadpS = _gyroZoffsetRadpS = 0.0f;
+      _accelXOffsetMps2 = _accelYOffsetMps2 = _accelZOffsetMps2 = 0.0f;
+      _gyroXOffsetRadpS = _gyroYOffsetRadpS = _gyroZOffsetRadpS = 0.0f;
 
       for ( int i = 0; i < 10; i++ ) {
         readAccelGyroSensor(false); // don't apply offsets for the moment
 
-        _accelXoffsetMps2 += _accelXMps2;
-        _accelYoffsetMps2 += _accelYMps2;
-        _accelZoffsetMps2 += _accelZMps2;
+        _accelXOffsetMps2 += _accelXMps2;
+        _accelYOffsetMps2 += _accelYMps2;
+        _accelZOffsetMps2 += _accelZMps2;
 
-        _gyroXoffsetRadpS += _gyroXRadpS;
-        _gyroYoffsetRadpS += _gyroYRadpS;
-        _gyroZoffsetRadpS += _gyroZRadpS;
+        _gyroXOffsetRadpS += _gyroXRadpS;
+        _gyroYOffsetRadpS += _gyroYRadpS;
+        _gyroZOffsetRadpS += _gyroZRadpS;
 
         delay(100);
       }
 
-      _accelXoffsetMps2 /= 10.0f;
-      _accelYoffsetMps2 /= 10.0f;
-      _accelZoffsetMps2 /= 10.0f;
-      _gyroXoffsetRadpS /= 10.0f;
-      _gyroYoffsetRadpS /= 10.0f;
-      _gyroZoffsetRadpS /= 10.0f;
+      _accelXOffsetMps2 /= 10.0f;
+      _accelYOffsetMps2 /= 10.0f;
+      _accelZOffsetMps2 /= 10.0f;
+      _gyroXOffsetRadpS /= 10.0f;
+      _gyroYOffsetRadpS /= 10.0f;
+      _gyroZOffsetRadpS /= 10.0f;
 
       // open new log
       if ( !openNewLog() ) 
@@ -551,7 +567,7 @@ float RocketelFS::readPressureTempSensor() {
 }
 
 // read acceleration+gyrometer sensor, set relevant private variables
-void RocketelFS::readAccelGyroSensor(bool applyOffsets) {
+void RocketelFS::readAccelGyroSensor(bool applYOffsets) {
   // use Adafruit sensor class to read (only interface available...)
   sensors_event_t accel;
   sensors_event_t gyro;
@@ -562,10 +578,10 @@ void RocketelFS::readAccelGyroSensor(bool applyOffsets) {
   _lastSensorReadingTimeMs = _lastAccelGyroSensorReadingTimeMs = millis();
   
   // record acceleration measurements
-  if ( applyOffsets ) {
-    _accelXMps2 = accel.acceleration.x - _accelXoffsetMps2; 
-    _accelYMps2 = accel.acceleration.y - _accelYoffsetMps2; 
-    _accelZMps2 = accel.acceleration.z - _accelZoffsetMps2; 
+  if ( applYOffsets ) {
+    _accelXMps2 = accel.acceleration.x - _accelXOffsetMps2; 
+    _accelYMps2 = accel.acceleration.y - _accelYOffsetMps2; 
+    _accelZMps2 = accel.acceleration.z - _accelZOffsetMps2; 
   } else {
     _accelXMps2 = accel.acceleration.x; 
     _accelYMps2 = accel.acceleration.y; 
@@ -575,10 +591,10 @@ void RocketelFS::readAccelGyroSensor(bool applyOffsets) {
   // _maxAccelG = 0.0f; // TODO calculate g's and then calculate max
 
   // record gyrometer measurements
-  if ( applyOffsets ) {
-    _gyroXRadpS = gyro.gyro.x - _gyroXoffsetRadpS;
-    _gyroYRadpS = gyro.gyro.y - _gyroYoffsetRadpS;
-    _gyroZRadpS = gyro.gyro.z - _gyroZoffsetRadpS;
+  if ( applYOffsets ) {
+    _gyroXRadpS = gyro.gyro.x - _gyroXOffsetRadpS;
+    _gyroYRadpS = gyro.gyro.y - _gyroYOffsetRadpS;
+    _gyroZRadpS = gyro.gyro.z - _gyroZOffsetRadpS;
   } else {
     _gyroXRadpS = gyro.gyro.x;
     _gyroYRadpS = gyro.gyro.y;
@@ -652,6 +668,8 @@ bool RocketelFS::changeAltitudeAlgorithm(char *algorithmStr, bool resetMaxAlt) {
 // TODO consider adding hysteresis to smooth out battery readings
 int RocketelFS::readBattery() {
 
+  _lastBatteryReadingTimeMs = millis(); 
+
   _batteryVoltage = _batteryADCvoltPerLsb * (float)analogRead(PIN_BATTERYADC);
 
   if ( _batteryVoltage < 3.3f ) {
@@ -669,8 +687,14 @@ int RocketelFS::readBattery() {
 
 // update BLE battery level characteristic
 // return battery level
-int RocketelFS::updateBLEBatteryLevel() {
-  
+int RocketelFS::updateBLEBAS() {
+  if (debug) {
+    Serial.print(F("DEBUG: Updating BLE BAS at "));
+    Serial.println(millis());
+  }
+
+  _lastBLEBASUpdateTimeMs = millis();
+
   blebas.write(_batteryLevel);
 
   return _batteryLevel;
@@ -684,6 +708,11 @@ void RocketelFS::updateBLETDS() {
   uint32_t timestampMs_uint32 = (uint32_t) _lastSensorReadingTimeMs;
   // TODO: think very carefully about what timestamp to report...
   uint32_t pressurePa_uint32 = (uint32_t) _pressurePa;
+
+  if (debug) {
+    Serial.print(F("DEBUG: Updating BLE TDS at "));
+    Serial.println(millis());
+  }
 
   // log index
   bletds_log_index.write(&_currentLogIndex,1);
@@ -737,16 +766,17 @@ void RocketelFS::updateBLETDS() {
   bletds_timestamp_ms.notify(&timestampMs_uint32,4);
 
   // set last update time
-  _lastBLETDSupdateTimeMs = millis();
+  _lastBLETDSUpdateTimeMs = millis();
 }
 
 // handle writes to BLE TCFGS characteristics
-// only accepts writes when mode == READ
+// only accepts writes when mode == STANDBY
+// otherwise, writes are ignored
 void RocketelFS::bletcfgsWriteCallback(uint16_t conn_hdl, BLECharacteristic* bchr, uint8_t* data, uint16_t len)
 {
   float fval;
 
-  if ( _mode != RocketelFS::MODE_READ )
+  if ( _mode != RocketelFS::MODE_STANDBY )
     return;
 
   if ( bchr == &bletcfgs_altitude_algorithm_str ) {
@@ -770,7 +800,7 @@ void RocketelFS::bletcfgsWriteCallback(uint16_t conn_hdl, BLECharacteristic* bch
       Serial.println(_altitudeOffsetM);
     }
   } else if ( bchr == &bletcfgs_altitude_str_units ) {
-    strncpy(_altitudeStrUnits, (char*) data, (len < 2) ? len : 2 );
+    strncpy(_altitudeStrUnits, (char*) data, (len < 3) ? len : 3 );
     if (debug) {
       Serial.print(F("DEBUG: bletcfgsWriteCallback altitude str units updated to "));
       Serial.println(_altitudeStrUnits);
@@ -779,16 +809,82 @@ void RocketelFS::bletcfgsWriteCallback(uint16_t conn_hdl, BLECharacteristic* bch
 
 }
 
-// check TCMDS:goto_mode_read (DEBUG)
-bool RocketelFS::readBLECmdGotoRead()
+// handle writes to BLE TCMDS characteristics
+// if a command is successfully executed, then the value of its char is set to 0
+void RocketelFS::bletcmdsWriteCallback(uint16_t conn_hdl, BLECharacteristic* bchr, uint8_t* data, uint16_t len)
 {
-  return bletcmds_goto_mode_read.read8();
-}
+  if ( debug ) 
+    Serial.println(F("DEBUG: Inside bletcmdsWriteCallback"));
 
-// check TCMDS:goto_mode_read (DEBUG)
-bool RocketelFS::readBLECmdGotoWrite()
-{
-  return bletcmds_goto_mode_write.read8();
+  if ( bchr == &bletcmds_goto_mode_standby && *data == 1 ) { // GO TO MODE_STANDBY
+    if (debug)
+      Serial.println(F("DEBUG: GO TO MODE STANDBY"));
+
+    if ( changeMode(MODE_STANDBY) ) {
+      bletcmds_goto_mode_standby.write8(0);
+      bletcmds_last_cmd_error_flag.write8(0);
+      if (debug) 
+        Serial.println(F("DEBUG: mode changed to STANDBY"));
+    }
+  } else if ( bchr == &bletcmds_goto_mode_read && *data == 1 ) { // GOT TO MODE_READ
+    if (debug)
+      Serial.println(F("DEBUG: GO TO MODE READ"));
+      
+    if ( changeMode(MODE_READ) ) {
+      bletcmds_goto_mode_read.write8(0);
+      bletcmds_last_cmd_error_flag.write8(0);
+      if (debug) 
+        Serial.println(F("DEBUG: mode changed to READ"));
+    }
+  } else if ( bchr == &bletcmds_goto_mode_record && *data == 1 ) { // GO TO MODE_RECORD
+    if (debug)
+      Serial.println(F("DEBUG: GO TO MODE RECORD"));
+      
+    if ( changeMode(MODE_RECORD) ) {
+      bletcmds_goto_mode_record.write8(0);
+      bletcmds_last_cmd_error_flag.write8(0);
+      if (debug) 
+        Serial.println(F("DEBUG: mode changed to RECORD"));
+    }
+  } else if ( bchr == &bletcmds_open_log && *data == 1 ) { // OPEN LOG CMD
+    if (debug)
+      Serial.println(F("DEBUG: OPEN LOG"));
+      
+    // this command is ignored in record mode
+    if ( _mode == MODE_RECORD ) {
+      bletcmds_open_log.write8(0);
+      return;
+    } else if ( _mode == MODE_STANDBY )
+      changeMode(MODE_READ);
+
+    if ( openLogForRead(bletcmds_log_index.read8()) ) {
+      bletcmds_open_log.write8(0);
+      bletcmds_last_cmd_error_flag.write8(0);
+    } else {
+      bletcmds_error_msg.write("COULD NOT OPEN LOG");
+      bletcmds_last_cmd_error_flag.write8(1);
+    }
+  } else if ( bchr == &bletcmds_open_log && *data == 1 ) { // DELETE LOG CMD
+    if (debug)
+      Serial.println(F("DEBUG: DELETE LOG"));
+      
+    // this command is ignored in record mode
+    if ( _mode == MODE_RECORD ) {
+      bletcmds_delete_log.write8(0);
+      return;
+    } 
+
+    if ( deleteLog(bletcmds_log_index.read8()) ) {
+      bletcmds_delete_log.write8(0);
+      bletcmds_last_cmd_error_flag.write8(0);
+    } else {
+      bletcmds_error_msg.write("COULD NOT DELETE LOG");
+      bletcmds_last_cmd_error_flag.write8(1);
+    }
+    // TODO else if ERASE_ALL, TRANSFER
+
+  }
+
 }
 
 // Callback invoked when a BLE connection is made
@@ -844,6 +940,7 @@ void RocketelFS::bleDisconnectCallback(uint16_t conn_handle, uint8_t reason)
 bool RocketelFS::openNewLog() 
 {
   char ones, tens;
+  bool retval = false;
 
   // find first available log index
 
@@ -918,7 +1015,18 @@ bool RocketelFS::openNewLog()
 
   // open LOGNN.DAT
   strcpy(&_filename[6],"DAT"); // change _filename to "LOGNN.DAT"
-  return _file.open(_filename,FILE_WRITE);
+  retval = _file.open(_filename,FILE_WRITE);
+
+  if (debug) {
+    if (retval) {
+      Serial.print(F("DEBUG: Opened file for writing: "));
+    } else {
+      Serial.print(F("DEBUG: Failed to open file for writing: "));
+    }
+    Serial.println(_filename);
+  }
+
+  return retval;
 
 }
 
@@ -973,6 +1081,8 @@ bool RocketelFS::writeFlashRecord()
 // Returns true on success, false on failure.
 bool RocketelFS::flushFlashWrites()
 {
+  bool retval = true;
+
   // close .DAT file
   _file.close();
 
@@ -981,10 +1091,6 @@ bool RocketelFS::flushFlashWrites()
   // append num records to .META file
   strcpy(&_filename[6],"META"); // change _filename to "LOGNN.META"
   _file = fatfs.open(_filename,FILE_WRITE); // WRITE/APPEND
-  // if (!_file) { // need to be fast, let's skip this for now
-  //   Serial.print("ERROR: could not open file: ");
-  //   Serial.println(_filename);
-  // }
   
   _file.print("NR:"); 
   _file.print(_numRecordsWritten); 
@@ -996,7 +1102,10 @@ bool RocketelFS::flushFlashWrites()
   // reopen .DAT file
   strcpy(&_filename[6],"DAT"); // change _filename to "LOGNN.DAT"
   _file = fatfs.open(_filename, FILE_WRITE); // WRITE/APPEND 
-       
+  if (!_file)
+    retval = false;
+
+  return retval;
 }
 
 // open LOGNN.DAT for reading
@@ -1017,6 +1126,7 @@ bool RocketelFS::openLogForRead(int logIndex)
   // open file
   if ( fatfs.open(_filename, FILE_READ) ) {
     _currentLogIndex = logIndex;
+    _lastFlashFlushTimeMs = millis(); // fake-out so we don't flush too fast
     return true;
   } else {
     _currentLogIndex = -1;
@@ -1030,6 +1140,43 @@ bool RocketelFS::openLogForRead(int logIndex)
 bool RocketelFS::closeFlashFile() 
 {
   return _file.close();
+}
+
+// list all files
+void RocketelFS::listAllFiles() {
+  // list files 
+  Serial.println(F("\n\nList of files:"));
+
+  File rootDir = fatfs.open("/");
+  if (!rootDir) {
+    Serial.println(F("ERROR: failed to read flash file list."));
+    return;
+  }
+  if (!rootDir.isDirectory()) {
+    Serial.println(F("ERROR: expected \"\\\" to be a directory."));
+    return;
+  }
+
+  File child = rootDir.openNextFile();
+  
+  while (child) {
+    child.getName(_filename, sizeof(_filename));
+    
+    // Print the file name and mention if it's a directory.
+    if (!child.isDirectory()) {
+      Serial.print("- "); 
+      Serial.print(_filename);
+      Serial.println();
+    }
+
+    // Keep calling openNextFile to get a new file
+    child = rootDir.openNextFile();
+  }
+
+  // If you want to list the files in the directory again call
+  // rewindDirectory().  Then openNextFile will start from the
+  // top again.
+  rootDir.rewindDirectory();
 }
 
 // private methods ------------------------------------------------------------
