@@ -43,10 +43,10 @@ bool printedIntro = false;
 float altitudeBuffer = 0.0;
 uint16_t timestampmsData = 0;
 int16_t pressureData = 0;
-uint16_t altitudedmData = 0;
+int16_t altitudedmData = 0;
 uint16_t *timestampmsDataPtr;
 int16_t *pressureDataPtr;
-uint16_t *altitudedmDataPtr;
+int16_t *altitudedmDataPtr;
 float pressurePa;
 float altitudeM;
 byte rwBuffer[MAX_BIN_RECORD_LENGTH]; 
@@ -185,7 +185,7 @@ void loop() { // LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOOP LOO
                 pressureData       = *pressureDataPtr;
                 pressurePa         = (float)pressureData + 100000.0f;
                 
-                altitudedmDataPtr  = (uint16_t*)&(rwBuffer[4]);
+                altitudedmDataPtr  = (int16_t*)&(rwBuffer[4]);
                 altitudedmData     = *altitudedmDataPtr;
                 altitudeM          =  (float)altitudedmData / 10.0f;
               
